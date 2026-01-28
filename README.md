@@ -21,17 +21,17 @@ Aplicație desktop Java pentru gestionarea vânzărilor și inventarului unei pa
 ## Build și Rulare
 
 ### Build
-```
+```bash
 mvn clean compile
 ```
 
 ### Rulare
-```
+```bash
 mvn javafx:run
 ```
 
 ### Empaquetare
-```
+```bash
 mvn clean package
 ```
 
@@ -55,4 +55,13 @@ src/
 ## Bază de Date
 
 Schema SQLite este inițializată automat la prima pornire. Baza de date se creează în directorul home al utilizatorului:
-- Windows: `%USERPROFILE%\.magsell\magsell.db`
+- Windows: `%USERPROFILE%\\.magsell\\magsell.db`
+
+## Autentificare (login)
+
+La prima pornire aplicația va crea un utilizator administrativ implicit:
+
+- Username: `admin`
+- Password: `1234`
+
+După autentificare ca `admin` puteți folosi meniul Admin → Manage Users pentru a crea alți utilizatori sau contați cu diferite roluri.
