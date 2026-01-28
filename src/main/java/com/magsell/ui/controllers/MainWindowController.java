@@ -105,12 +105,12 @@ public class MainWindowController {
 
     @FXML
     private void handleAddProduct() {
-        showNotImplemented("Adăugare produs");
+        openProductEditor();
     }
 
     @FXML
     private void handleViewProducts() {
-        showNotImplemented("Vezi produsele");
+        openProductList();
     }
 
     @FXML
@@ -140,5 +140,52 @@ public class MainWindowController {
         alert.setContentText("Această funcționalitate este în dezvoltare...");
         alert.showAndWait();
         logger.info("Utilizator a accesat: " + feature);
+    }
+
+    /**
+     * Deschide dialogul de adăugare de produse
+     */
+    private void openProductEditor() {
+        try {
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
+                    getClass().getResource("/com/magsell/ui/fxml/ProductEditor.fxml"));
+            loader.setController(new ProductController());
+            javafx.scene.Parent root = loader.load();
+
+            javafx.stage.Stage stage = new javafx.stage.Stage();
+            stage.setTitle("Adaugă produs");
+            stage.setScene(new javafx.scene.Scene(root, 500, 400));
+            stage.showAndWait();
+        } catch (Exception e) {
+            logger.error("Eroare la deschiderea editorului de produs", e);
+            Alert alert = new Alert(AlertType.ERROR);
+            alert.setTitle("Eroare");
+            alert.setContentText("Eroare la deschiderea editorului: " + e.getMessage());
+            alert.showAndWait();
+        }
+    }
+
+    /**
+     * Deschide fereastra cu lista de produse
+     */
+    private void openProductList() {
+        try {
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
+                    getClass().getResource("/com/magsell/ui/fxml/ProductList.fxml"));
+            ProductController controller = new ProductController();
+            loader.setController(controller);
+            javafx.scene.Parent root = loader.load();
+
+            javafx.stage.Stage stage = new javafx.stage.Stage();
+            stage.setTitle("Gestiona Produse");
+            stage.setScene(new javafx.scene.Scene(root, 1000, 600));
+            stage.showAndWait();
+        } catch (Exception e) {
+            logger.error("Eroare la deschiderea listei de produse", e);
+            Alert alert = new Alert(AlertType.ERROR);
+            alert.setTitle("Eroare");
+            alert.setContentText("Eroare la deschiderea listei: " + e.getMessage());
+            alert.showAndWait();
+        }
     }
 }
