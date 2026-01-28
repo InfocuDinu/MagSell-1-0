@@ -5,7 +5,6 @@ import com.magsell.services.ProductService;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -19,6 +18,8 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.List;
+import javafx.collections.transformation.FilteredList;
+import javafx.scene.control.cell.PropertyValueFactory;
 
 /**
  * Controlerul pentru managerul de produse.
@@ -55,6 +56,7 @@ public class ProductController {
     @FXML
     public void initialize() {
         logger.info("Initializing ProductController");
+        setupTableColumns();
         loadProducts();
         loadCategories();
 
@@ -62,6 +64,41 @@ public class ProductController {
         if (productTable != null) {
             productTable.setItems(filteredList);
         }
+    }
+
+    /**
+     * Configurează coloanele tabelei
+     */
+    private void setupTableColumns() {
+        if (productTable == null) return;
+
+        TableColumn<Product, Integer> idCol = new TableColumn<>("ID");
+        idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
+        idCol.setPrefWidth(50);
+
+        TableColumn<Product, String> nameCol = new TableColumn<>("Nume");
+        nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
+        nameCol.setPrefWidth(150);
+
+        TableColumn<Product, String> descCol = new TableColumn<>("Descriere");
+        descCol.setCellValueFactory(new PropertyValueFactory<>("description"));
+        descCol.setPrefWidth(200);
+
+        TableColumn<Product, BigDecimal> priceCol = new TableColumn<>("Pret");
+        priceCol.setCellValueFactory(new PropertyValueFactory<>("price"));
+        priceCol.setPrefWidth(100);
+
+        TableColumn<Product, Integer> qtyCol = new TableColumn<>("Cant.");
+        qtyCol.setCellValueFactory(new PropertyValueFactory<>("quantity"));
+        qtyCol.setPrefWidth(80);
+
+        TableColumn<Product, String> catCol = new TableColumn<>("Categoria");
+        catCol.setCellValueFactory(new PropertyValueFactory<>("category"));
+        catCol.setPrefWidth(100);
+
+        ObservableList<TableColumn<Product, ?>> columns = FXCollections.observableArrayList();
+        columns.addAll(idCol, nameCol, descCol, priceCol, qtyCol, catCol);
+        productTable.getColumns().setAll(columns);
     }
 
     /**

@@ -21,28 +21,7 @@
     </top>
 
     <center>
-        <TableView fx:id="productTable" VBox.vgrow="ALWAYS">
-            <columns>
-                <TableColumn text="ID" prefWidth="50">
-                    <cellValueFactory><PropertyValueFactory property="id"/></cellValueFactory>
-                </TableColumn>
-                <TableColumn text="Nume" prefWidth="150">
-                    <cellValueFactory><PropertyValueFactory property="name"/></cellValueFactory>
-                </TableColumn>
-                <TableColumn text="Descriere" prefWidth="200">
-                    <cellValueFactory><PropertyValueFactory property="description"/></cellValueFactory>
-                </TableColumn>
-                <TableColumn text="Pret" prefWidth="100">
-                    <cellValueFactory><PropertyValueFactory property="price"/></cellValueFactory>
-                </TableColumn>
-                <TableColumn text="Cant." prefWidth="80">
-                    <cellValueFactory><PropertyValueFactory property="quantity"/></cellValueFactory>
-                </TableColumn>
-                <TableColumn text="Categoria" prefWidth="100">
-                    <cellValueFactory><PropertyValueFactory property="category"/></cellValueFactory>
-                </TableColumn>
-            </columns>
-        </TableView>
+        <TableView fx:id="productTable" VBox.vgrow="ALWAYS"/>
     </center>
 
     <bottom>
