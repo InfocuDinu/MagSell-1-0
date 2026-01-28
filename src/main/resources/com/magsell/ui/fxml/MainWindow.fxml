@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.Tab?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+             fx:controller="com.magsell.ui.controllers.MainWindowController">
+    <top>
+        <MenuBar>
+            <Menu text="Fișier">
+                <MenuItem text="Ieșire" onAction="#handleExit"/>
+            </Menu>
+            <Menu text="Produse">
+                <MenuItem text="Adăugare produs" onAction="#handleAddProduct"/>
+                <MenuItem text="Vezi toate produsele" onAction="#handleViewProducts"/>
+            </Menu>
+            <Menu text="Vânzări">
+                <MenuItem text="Nouă vânzare" onAction="#handleNewSale"/>
+                <MenuItem text="Vezi vânzări" onAction="#handleViewSales"/>
+            </Menu>
+            <Menu text="Ajutor">
+                <MenuItem text="Despre" onAction="#handleAbout"/>
+            </Menu>
+        </MenuBar>
+    </top>
+    <center>
+        <VBox style="-fx-padding: 20;">
+            <Label text="Bun venit în MagSell!" style="-fx-font-size: 24; -fx-font-weight: bold;"/>
+            <Label text="Aplicație pentru gestionarea patiseriei" style="-fx-font-size: 14; -fx-padding: 10 0 0 0;"/>
+        </VBox>
+    </center>
+</BorderPane>
