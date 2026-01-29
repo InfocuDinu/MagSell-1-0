@@ -14,12 +14,21 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.layout.GridPane;
 import javafx.scene.control.TextField;
 import javafx.geometry.Insets;
+import javafx.scene.control.TabPane;
+import javafx.stage.Stage;
+import com.magsell.services.ExportService;
+import javafx.scene.control.DatePicker;
+import java.time.LocalDate;
 
 /**
  * Controller pentru fereastra principală a aplicației MagSell
  */
 public class MainWindowController {
     private static final Logger logger = LoggerFactory.getLogger(MainWindowController.class);
+    private final ExportService exportService = new ExportService();
+
+    @FXML
+    private TabPane mainTabPane;
 
     @FXML
     private void handleExit() {
@@ -120,7 +129,83 @@ public class MainWindowController {
 
     @FXML
     private void handleViewSales() {
-        showNotImplemented("Vezi vânzări");
+        // Selectează tab-ul de vânzări
+        if (mainTabPane != null && mainTabPane.getTabs().size() > 3) {
+            mainTabPane.getSelectionModel().select(3);
+        }
+    }
+
+    @FXML
+    private void handleExportPDF() {
+        try {
+            Dialog<LocalDate[]> dialog = createDateRangeDialog("Export PDF");
+            dialog.showAndWait().ifPresent(dates -> {
+                if (dates != null && dates.length == 2) {
+                    Stage stage = (Stage) mainTabPane.getScene().getWindow();
+                    exportService.exportToPDF(dates[0], dates[1], stage);
+                    showAlert("Succes", "Raport PDF exportat cu succes!");
+                }
+            });
+        } catch (Exception e) {
+            logger.error("Eroare la exportul PDF", e);
+            showAlert("Eroare", "Eroare la exportul PDF: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleExportExcel() {
+        try {
+            Dialog<LocalDate[]> dialog = createDateRangeDialog("Export Excel");
+            dialog.showAndWait().ifPresent(dates -> {
+                if (dates != null && dates.length == 2) {
+                    Stage stage = (Stage) mainTabPane.getScene().getWindow();
+                    exportService.exportToExcel(dates[0], dates[1], stage);
+                    showAlert("Succes", "Raport Excel exportat cu succes!");
+                }
+            });
+        } catch (Exception e) {
+            logger.error("Eroare la exportul Excel", e);
+            showAlert("Eroare", "Eroare la exportul Excel: " + e.getMessage());
+        }
+    }
+
+    private Dialog<LocalDate[]> createDateRangeDialog(String title) {
+        Dialog<LocalDate[]> dialog = new Dialog<>();
+        dialog.setTitle(title);
+        dialog.setHeaderText("Selectează perioada pentru raport");
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 150, 10, 10));
+
+        DatePicker startDate = new DatePicker(LocalDate.now().minusDays(30));
+        DatePicker endDate = new DatePicker(LocalDate.now());
+
+        grid.add(new javafx.scene.control.Label("Data început:"), 0, 0);
+        grid.add(startDate, 1, 0);
+        grid.add(new javafx.scene.control.Label("Data sfârșit:"), 0, 1);
+        grid.add(endDate, 1, 1);
+
+        dialog.getDialogPane().setContent(grid);
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == ButtonType.OK) {
+                return new LocalDate[]{startDate.getValue(), endDate.getValue()};
+            }
+            return null;
+        });
+
+        return dialog;
+    }
+
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 
     @FXML

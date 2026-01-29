@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<VBox spacing="20" styleClass="dashboard-container" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.magsell.ui.controllers.DashboardController">
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+
+    <!-- Header -->
+    <HBox alignment="CENTER_LEFT" spacing="10">
+        <Label text="Dashboard" styleClass="label-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="Reîmprospătează" onAction="#handleRefresh" styleClass="button-secondary"/>
+    </HBox>
+
+    <!-- Statistici principale -->
+    <GridPane styleClass="stats-grid" hgap="20" vgap="20">
+        <columnConstraints>
+            <ColumnConstraints hgrow="ALWAYS" minWidth="250"/>
+            <ColumnConstraints hgrow="ALWAYS" minWidth="250"/>
+            <ColumnConstraints hgrow="ALWAYS" minWidth="250"/>
+            <ColumnConstraints hgrow="ALWAYS" minWidth="250"/>
+        </columnConstraints>
+
+        <!-- Vânzări astăzi -->
+        <VBox styleClass="stat-card" GridPane.columnIndex="0">
+            <Label text="Vânzări Astăzi" styleClass="label-stat-label"/>
+            <Label fx:id="todaySalesLabel" text="0" styleClass="label-stat-value"/>
+        </VBox>
+
+        <!-- Venituri astăzi -->
+        <VBox styleClass="stat-card" GridPane.columnIndex="1">
+            <Label text="Venituri Astăzi" styleClass="label-stat-label"/>
+            <Label fx:id="todayRevenueLabel" text="0,00 RON" styleClass="label-stat-value"/>
+        </VBox>
+
+        <!-- Total produse -->
+        <VBox styleClass="stat-card" GridPane.columnIndex="2">
+            <Label text="Total Produse" styleClass="label-stat-label"/>
+            <Label fx:id="totalProductsLabel" text="0" styleClass="label-stat-value"/>
+        </VBox>
+
+        <!-- Stoc critic -->
+        <VBox styleClass="stat-card" GridPane.columnIndex="3">
+            <Label text="Stoc Critic" styleClass="label-stat-label"/>
+            <Label fx:id="lowStockCountLabel" text="0" styleClass="label-stat-value" style="-fx-text-fill: #F44336;"/>
+        </VBox>
+    </GridPane>
+
+    <!-- Lista produse și statistici -->
+    <HBox spacing="20" VBox.vgrow="ALWAYS">
+        <!-- Cele mai vândute produse -->
+        <VBox spacing="10" HBox.hgrow="ALWAYS" styleClass="card">
+            <Label text="Cele mai vândute produse" styleClass="label-subtitle"/>
+            <ListView fx:id="topProductsList" VBox.vgrow="ALWAYS"/>
+        </VBox>
+
+        <!-- Produse cu stoc critic -->
+        <VBox spacing="10" HBox.hgrow="ALWAYS" styleClass="card">
+            <Label text="Produse cu stoc critic" styleClass="label-subtitle"/>
+            <ListView fx:id="lowStockList" VBox.vgrow="ALWAYS"/>
+        </VBox>
+    </HBox>
+</VBox>

@@ -20,6 +20,10 @@ import java.sql.SQLException;
 import java.util.List;
 import javafx.collections.transformation.FilteredList;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+
+import java.io.File;
 
 /**
  * Controlerul pentru managerul de produse.
@@ -47,6 +51,10 @@ public class ProductController {
     private TextField quantityField;
     @FXML
     private ComboBox<String> categoryField;
+    @FXML
+    private Label imagePathLabel;
+    @FXML
+    private Button selectImageButton;
 
     private Product currentEditingProduct;
     private Stage editorStage;
@@ -241,8 +249,18 @@ public class ProductController {
                 priceField.setText(currentEditingProduct.getPrice().toString());
                 quantityField.setText(String.valueOf(currentEditingProduct.getQuantity()));
                 categoryField.setValue(currentEditingProduct.getCategory());
+                if (currentEditingProduct.getImagePath() != null) {
+                    imagePathLabel.setText(currentEditingProduct.getImagePath());
+                } else {
+                    imagePathLabel.setText("Nicio imagine selectată");
+                }
             } else {
                 clearEditorFields();
+            }
+            
+            // Configurează butonul de selectare imagine
+            if (selectImageButton != null) {
+                selectImageButton.setOnAction(e -> handleSelectImage());
             }
 
             editorStage.showAndWait();
@@ -267,6 +285,9 @@ public class ProductController {
             product.setPrice(new BigDecimal(priceField.getText().isEmpty() ? "0" : priceField.getText()));
             product.setQuantity(Integer.parseInt(quantityField.getText().isEmpty() ? "0" : quantityField.getText()));
             product.setCategory(categoryField.getValue());
+            if (imagePathLabel != null && !imagePathLabel.getText().equals("Nicio imagine selectată")) {
+                product.setImagePath(imagePathLabel.getText());
+            }
 
             if (currentEditingProduct == null) {
                 // Create new
@@ -307,12 +328,36 @@ public class ProductController {
         stage.close();
     }
 
+    @FXML
+    public void handleSelectImage() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Selectează imagine produs");
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("Imagini", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.bmp")
+        );
+        
+        Stage stage = (Stage) (selectImageButton != null ? selectImageButton.getScene().getWindow() : 
+                (nameField != null ? nameField.getScene().getWindow() : null));
+        if (stage == null) {
+            stage = editorStage;
+        }
+        
+        File selectedFile = fileChooser.showOpenDialog(stage);
+        if (selectedFile != null) {
+            imagePathLabel.setText(selectedFile.getAbsolutePath());
+            logger.info("Imagine selectată: " + selectedFile.getAbsolutePath());
+        }
+    }
+
     private void clearEditorFields() {
         nameField.clear();
         descriptionField.clear();
         priceField.clear();
         quantityField.clear();
         categoryField.setValue(null);
+        if (imagePathLabel != null) {
+            imagePathLabel.setText("Nicio imagine selectată");
+        }
     }
 
     private void showAlert(String title, String message) {

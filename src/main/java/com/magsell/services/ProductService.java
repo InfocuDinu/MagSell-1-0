@@ -25,7 +25,7 @@ public class ProductService {
      * Creează un produs nou.
      */
     public void createProduct(Product product) throws SQLException {
-        String sql = "INSERT INTO products (name, description, price, quantity, category) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO products (name, description, price, quantity, category, image_path) VALUES (?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = dbService.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -34,6 +34,7 @@ public class ProductService {
             pstmt.setBigDecimal(3, product.getPrice());
             pstmt.setInt(4, product.getQuantity());
             pstmt.setString(5, product.getCategory());
+            pstmt.setString(6, product.getImagePath());
 
             pstmt.executeUpdate();
             logger.info("Produs creat: " + product.getName());
@@ -82,7 +83,7 @@ public class ProductService {
      * Actualizează un produs.
      */
     public void updateProduct(Product product) throws SQLException {
-        String sql = "UPDATE products SET name = ?, description = ?, price = ?, quantity = ?, category = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+        String sql = "UPDATE products SET name = ?, description = ?, price = ?, quantity = ?, category = ?, image_path = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
 
         try (Connection conn = dbService.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -91,7 +92,8 @@ public class ProductService {
             pstmt.setBigDecimal(3, product.getPrice());
             pstmt.setInt(4, product.getQuantity());
             pstmt.setString(5, product.getCategory());
-            pstmt.setInt(6, product.getId());
+            pstmt.setString(6, product.getImagePath());
+            pstmt.setInt(7, product.getId());
 
             pstmt.executeUpdate();
             logger.info("Produs actualizat: " + product.getName());
@@ -141,6 +143,12 @@ public class ProductService {
         p.setPrice(rs.getBigDecimal("price"));
         p.setQuantity(rs.getInt("quantity"));
         p.setCategory(rs.getString("category"));
+        try {
+            p.setImagePath(rs.getString("image_path"));
+        } catch (SQLException e) {
+            // Coloana poate să nu existe în baze de date vechi
+            p.setImagePath(null);
+        }
         try {
             p.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
             p.setUpdatedAt(rs.getTimestamp("updated_at").toLocalDateTime());

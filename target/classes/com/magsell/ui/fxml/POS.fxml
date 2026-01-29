@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane styleClass="pos-container" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.magsell.ui.controllers.POSController">
+    <left>
+        <!-- Panoul produselor -->
+        <VBox spacing="15" style="-fx-background-color: #FAF7F2; -fx-padding: 20;">
+            <!-- Căutare și filtrare -->
+            <VBox spacing="10">
+                <Label text="Căutare produse" styleClass="label-subtitle"/>
+                <TextField fx:id="searchField" promptText="Caută produse..." styleClass="text-field"/>
+                <ComboBox fx:id="categoryCombo" promptText="Selectează categorie" styleClass="combo-box"/>
+            </VBox>
+
+            <!-- Lista produselor -->
+            <Label text="Produse disponibile" styleClass="label-subtitle"/>
+            <ScrollPane fx:id="productsScrollPane" fitToWidth="true" VBox.vgrow="ALWAYS">
+                <FlowPane fx:id="productsFlowPane" styleClass="products-grid"/>
+            </ScrollPane>
+        </VBox>
+    </left>
+
+    <right>
+        <!-- Panoul coșului -->
+        <VBox spacing="15" styleClass="cart-panel" minWidth="350">
+            <Label text="Coș de cumpărături" styleClass="label-subtitle"/>
+
+            <!-- Lista produselor din coș -->
+            <ListView fx:id="cartListView" VBox.vgrow="ALWAYS" styleClass="cart-item"/>
+
+            <!-- Total -->
+            <Separator/>
+            <HBox alignment="CENTER_RIGHT">
+                <Label fx:id="totalLabel" text="Total: 0,00 RON" styleClass="total-amount"/>
+            </HBox>
+
+            <!-- Butoane -->
+            <HBox spacing="10">
+                <Button text="Golește coș" fx:id="clearCartButton" onAction="#handleClearCart" 
+                        styleClass="button-secondary" HBox.hgrow="ALWAYS" disable="true"/>
+                <Button text="Finalizează vânzare" fx:id="checkoutButton" onAction="#handleCheckout" 
+                        styleClass="button-success" HBox.hgrow="ALWAYS" disable="true"/>
+            </HBox>
+        </VBox>
+    </right>
+</BorderPane>

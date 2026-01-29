@@ -9,6 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.magsell.database.DatabaseService;
+import com.magsell.models.User;
+import com.magsell.services.UserService;
 
 import java.io.IOException;
 
@@ -19,6 +21,7 @@ import java.io.IOException;
 public class App extends Application {
     private static final Logger logger = LoggerFactory.getLogger(App.class);
     private static final String APP_TITLE = "MagSell - Gestionare Patiserie";
+    private static User currentUser;
 
     @Override
     public void start(Stage primaryStage) throws IOException {
@@ -26,28 +29,34 @@ public class App extends Application {
         try {
             DatabaseService.getInstance().init();
             logger.info("Baza de date inițializată cu succes");
+            
+            // Asigură existența utilizatorului admin default
+            UserService userService = new UserService();
+            userService.ensureDefaultAdmin();
+            logger.info("Utilizator admin default verificat");
         } catch (Exception e) {
             logger.error("Eroare la inițializarea bazei de date", e);
             showErrorAndExit("Eroare la conectarea cu baza de date");
         }
 
-        // Încărcare FXML
+        // Încărcare fereastra de login
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/magsell/ui/fxml/MainWindow.fxml"));
-            Scene scene = new Scene(loader.load(), 1200, 800);
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/magsell/ui/fxml/LoginWindow.fxml"));
+            Scene scene = new Scene(loader.load(), 320, 280);
 
             // Încărcare stiluri CSS
             String css = getClass().getResource("/com/magsell/ui/css/styles.css").toExternalForm();
             scene.getStylesheets().add(css);
 
-            primaryStage.setTitle(APP_TITLE);
+            primaryStage.setTitle(APP_TITLE + " - Login");
             primaryStage.setScene(scene);
+            primaryStage.setResizable(false);
             primaryStage.setOnCloseRequest(e -> shutdown());
             primaryStage.show();
 
-            logger.info("Aplicație pornită cu succes");
+            logger.info("Fereastra de login afișată cu succes");
         } catch (IOException e) {
-            logger.error("Eroare la încărcarea interfeței", e);
+            logger.error("Eroare la încărcarea ferestrei de login", e);
             showErrorAndExit("Eroare la încărcarea interfeței");
         }
     }
@@ -64,6 +73,14 @@ public class App extends Application {
         } catch (Exception e) {
             logger.error("Eroare la închiderea bazei de date", e);
         }
+    }
+
+    public static User getCurrentUser() {
+        return currentUser;
+    }
+
+    public static void setCurrentUser(User user) {
+        currentUser = user;
     }
 
     public static void main(String[] args) {

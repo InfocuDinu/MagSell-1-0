@@ -18,7 +18,7 @@ import java.sql.Statement;
 public class DatabaseService {
     private static final Logger logger = LoggerFactory.getLogger(DatabaseService.class);
     private static DatabaseService instance;
-    private Connection connection;
+    private String dbUrl;
     private static final String DB_DIR = ".magsell";
     private static final String DB_NAME = "magsell.db";
 
@@ -44,11 +44,10 @@ public class DatabaseService {
             Path dbDir = Paths.get(System.getProperty("user.home"), DB_DIR);
             Files.createDirectories(dbDir);
 
-            // Deschide conexiunea la SQLite
+            // Configurează URL-ul pentru SQLite (deschidem conexiuni per operație)
             String dbPath = dbDir.resolve(DB_NAME).toString();
-            String url = "jdbc:sqlite:" + dbPath;
-            this.connection = DriverManager.getConnection(url);
-            logger.info("Conectare la baza de date: " + url);
+            this.dbUrl = "jdbc:sqlite:" + dbPath;
+            logger.info("Conectare la baza de date: " + dbUrl);
 
             // Creează tabelele dacă nu există
             createTables();
@@ -63,17 +62,50 @@ public class DatabaseService {
      */
     private void createTables() throws SQLException {
         String[] tables = {
+            createUsersTable(),
             createProductsTable(),
             createSalesTable(),
             createCustomersTable()
         };
 
-        try (Statement stmt = connection.createStatement()) {
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             Statement stmt = conn.createStatement()) {
             for (String table : tables) {
                 stmt.execute(table);
             }
             logger.info("Tabelele s-au creat cu succes");
+            
+            // Adaugă coloana image_path dacă nu există (migrare pentru baze de date existente)
+            addImagePathColumnIfNotExists(stmt);
+            
+            // Creează utilizatorul admin implicit
+            ensureDefaultAdmin();
         }
+    }
+
+    /**
+     * Creează utilizatorul admin implicit dacă nu există.
+     */
+    private void ensureDefaultAdmin() {
+        try {
+            com.magsell.services.UserService userService = new com.magsell.services.UserService();
+            userService.ensureDefaultAdmin();
+        } catch (Exception e) {
+            logger.warn("Nu s-a putut crea utilizatorul admin implicit: " + e.getMessage());
+        }
+    }
+
+    private String createUsersTable() {
+        return """
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                salt TEXT NOT NULL,
+                role TEXT NOT NULL DEFAULT 'user',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """;
     }
 
     private String createProductsTable() {
@@ -85,10 +117,27 @@ public class DatabaseService {
                 price DECIMAL(10,2) NOT NULL,
                 quantity INTEGER NOT NULL,
                 category TEXT,
+                image_path TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             """;
+    }
+
+    /**
+     * Adaugă coloana image_path la tabelul products dacă nu există (pentru migrare).
+     */
+    private void addImagePathColumnIfNotExists(Statement stmt) {
+        try {
+            // Verifică dacă coloana există
+            stmt.execute("PRAGMA table_info(products)");
+            // Dacă nu există, o adaugă
+            stmt.execute("ALTER TABLE products ADD COLUMN image_path TEXT");
+            logger.info("Coloana image_path adăugată la tabelul products");
+        } catch (SQLException e) {
+            // Coloana există deja sau altă eroare - ignorăm
+            logger.debug("Coloana image_path există deja sau eroare la adăugare: " + e.getMessage());
+        }
     }
 
     private String createSalesTable() {
@@ -126,19 +175,18 @@ public class DatabaseService {
      * Obține conexiunea la baza de date.
      */
     public Connection getConnection() throws SQLException {
-        if (connection == null || connection.isClosed()) {
-            throw new SQLException("Conexiunea la baza de date este închisă");
+        if (dbUrl == null || dbUrl.isBlank()) {
+            throw new SQLException("Baza de date nu este inițializată");
         }
-        return connection;
+        return DriverManager.getConnection(dbUrl);
     }
 
     /**
      * Închide conexiunea la baza de date.
      */
     public void close() throws SQLException {
-        if (connection != null && !connection.isClosed()) {
-            connection.close();
-            logger.info("Conexiune la baza de date închisă");
-        }
+        // Conexiunile sunt deschise per operație (try-with-resources) în servicii.
+        // Păstrăm metoda pentru compatibilitate (App.shutdown()).
+        logger.info("DatabaseService closed (no persistent connection)");
     }
 }

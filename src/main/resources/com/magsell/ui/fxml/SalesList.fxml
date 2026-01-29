@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.magsell.ui.controllers.SalesController">
+    <top>
+        <VBox spacing="10" style="-fx-padding: 10;">
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label text="Istoric Vânzări" styleClass="label-subtitle"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button text="Reîmprospătează" onAction="#handleRefresh" styleClass="button-secondary"/>
+            </HBox>
+        </VBox>
+    </top>
+
+    <center>
+        <TableView fx:id="salesTable" VBox.vgrow="ALWAYS"/>
+    </center>
+</BorderPane>

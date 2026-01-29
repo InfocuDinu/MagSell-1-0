@@ -31,5 +31,5 @@
     <Button text="Login" onAction="#handleLogin" prefWidth="100" prefHeight="35" 
             style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;" />
     
-    <Label text="Default: xxxx / xxxx" style="-fx-font-size: 11px; -fx-text-fill: #7f8c8d;" />
+    <Label text="Default: admin / 1234" style="-fx-font-size: 11px; -fx-text-fill: #7f8c8d;" />
 </VBox>
