@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.magsell.ui.controllers.UserManagementController">
+    <top>
+        <VBox spacing="10" style="-fx-padding: 10;">
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label text="Gestionare Utilizatori" style="-fx-font-size: 18; -fx-font-weight: bold;"/>
+                <Separator HBox.hgrow="ALWAYS" orientation="HORIZONTAL"/>
+                <Button fx:id="newUserButton" text="+ Utilizator Nou" style="-fx-padding: 8;"/>
+                <Button fx:id="editUserButton" text="✏️ Editează Utilizator" style="-fx-padding: 8;"/>
+                <Button fx:id="deleteButton" text="Șterge Utilizator" style="-fx-padding: 8;"/>
+                <Button fx:id="refreshButton" text="🔄 Reîncarcă" style="-fx-padding: 8;"/>
+            </HBox>
+        </VBox>
+    </top>
+
+    <center>
+        <TableView fx:id="userTable" VBox.vgrow="ALWAYS">
+            <columns>
+                <TableColumn fx:id="idColumn" text="ID" prefWidth="50"/>
+                <TableColumn fx:id="usernameColumn" text="Utilizator" prefWidth="150"/>
+                <TableColumn fx:id="roleColumn" text="Rol" prefWidth="80"/>
+                <TableColumn fx:id="manageProductsColumn" text="Produse" prefWidth="80"/>
+                <TableColumn fx:id="manageCategoriesColumn" text="Categorii" prefWidth="80"/>
+                <TableColumn fx:id="manageUsersColumn" text="Utilizatori" prefWidth="80"/>
+                <TableColumn fx:id="viewReportsColumn" text="Rapoarte" prefWidth="80"/>
+                <TableColumn fx:id="manageSalesColumn" text="Vânzări" prefWidth="80"/>
+            </columns>
+        </TableView>
+    </center>
+
+    <bottom>
+        <VBox spacing="5" style="-fx-padding: 10;">
+            <HBox spacing="10" style="-fx-padding: 10;" alignment="CENTER_LEFT">
+                <Label fx:id="statusLabel" text="ℹ️ Bifați căsuțele pentru a acorda permisiuni. Utilizatorii 'admin' au toate permisiunile." 
+                       style="-fx-text-fill: #666; -fx-font-style: italic;"/>
+            </HBox>
+        </VBox>
+    </bottom>
+</BorderPane>
