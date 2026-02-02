@@ -2,6 +2,7 @@ com\magsell\ui\controllers\LoginController.class
 com\magsell\services\ExportService.class
 com\magsell\ui\controllers\MainWindowController.class
 com\magsell\ui\controllers\ProductController.class
+com\magsell\models\Category.class
 com\magsell\services\UserService.class
 com\magsell\ui\controllers\SalesController$1.class
 com\magsell\ui\controllers\POSController.class
@@ -13,7 +14,10 @@ com\magsell\database\DatabaseService.class
 com\magsell\models\User.class
 com\magsell\ui\controllers\SalesController$3.class
 com\magsell\App.class
+com\magsell\services\CategoryService.class
+com\magsell\ui\controllers\UserManagementController.class
 com\magsell\services\SalesService.class
 com\magsell\ui\controllers\DashboardController.class
+com\magsell\ui\controllers\CategoryController.class
 com\magsell\ui\controllers\SalesController$2.class
 com\magsell\ui\controllers\SalesController.class

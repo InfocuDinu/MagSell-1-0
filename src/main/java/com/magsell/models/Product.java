@@ -12,7 +12,8 @@ public class Product {
     private String description;
     private BigDecimal price;
     private int quantity;
-    private String category;
+    private String category; // Keep for backward compatibility
+    private Integer categoryId; // New field for foreign key relationship
     private String imagePath; // Cale către imaginea produsului
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -26,6 +27,14 @@ public class Product {
         this.price = price;
         this.quantity = quantity;
         this.category = category;
+    }
+
+    public Product(String name, String description, BigDecimal price, int quantity, Integer categoryId) {
+        this.name = name;
+        this.description = description;
+        this.price = price;
+        this.quantity = quantity;
+        this.categoryId = categoryId;
     }
 
     // Getters and Setters
@@ -75,6 +84,14 @@ public class Product {
 
     public void setCategory(String category) {
         this.category = category;
+    }
+
+    public Integer getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(Integer categoryId) {
+        this.categoryId = categoryId;
     }
 
     public String getImagePath() {

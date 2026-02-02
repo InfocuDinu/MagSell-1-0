@@ -1,7 +1,9 @@
 package com.magsell.ui.controllers;
 
 import com.magsell.models.Product;
+import com.magsell.models.Category;
 import com.magsell.services.ProductService;
+import com.magsell.services.CategoryService;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -32,6 +34,7 @@ import java.io.File;
 public class ProductController {
     private static final Logger logger = LoggerFactory.getLogger(ProductController.class);
     private final ProductService productService = new ProductService();
+    private final CategoryService categoryService = new CategoryService();
 
     @FXML
     private TableView<Product> productTable;
@@ -137,13 +140,20 @@ public class ProductController {
     private void loadCategories() {
         new Thread(() -> {
             try {
-                List<String> categories = productService.getCategories();
+                // Încărcăm categoriile din noul sistem
+                List<Category> categories = categoryService.getAllCategories();
+                
+                // Convertim în lista de string-uri pentru compatibilitate
+                List<String> categoryNames = categories.stream()
+                    .map(Category::getName)
+                    .toList();
+                
                 Platform.runLater(() -> {
                     if (categoryCombo != null) {
-                        categoryCombo.setItems(FXCollections.observableArrayList(categories));
+                        categoryCombo.setItems(FXCollections.observableArrayList(categoryNames));
                     }
                     if (categoryField != null) {
-                        categoryField.setItems(FXCollections.observableArrayList(categories));
+                        categoryField.setItems(FXCollections.observableArrayList(categoryNames));
                     }
                     logger.info("Incarcate " + categories.size() + " categorii");
                 });
@@ -151,6 +161,13 @@ public class ProductController {
                 logger.error("Eroare la incarcarea categoriilor", e);
             }
         }).start();
+    }
+
+    /**
+     * Reîncarcă lista de categorii (public pentru a fi apelat din exterior)
+     */
+    public void refreshCategories() {
+        loadCategories();
     }
 
     @FXML
@@ -209,6 +226,12 @@ public class ProductController {
     @FXML
     public void handleFilterByCategory() {
         filterProducts();
+    }
+
+    @FXML
+    public void handleRefreshCategories() {
+        loadCategories();
+        showAlert("Reîncărcare", "Lista de categorii a fost reîncărcată");
     }
 
     /**

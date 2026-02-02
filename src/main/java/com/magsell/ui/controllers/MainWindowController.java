@@ -1,7 +1,8 @@
 package com.magsell.ui.controllers;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
+import javafx.scene.control.*;
 import javafx.scene.control.Alert.AlertType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +16,8 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.control.TextField;
 import javafx.geometry.Insets;
 import javafx.scene.control.TabPane;
+import javafx.scene.control.MenuBar;
+import javafx.scene.control.Menu;
 import javafx.stage.Stage;
 import com.magsell.services.ExportService;
 import javafx.scene.control.DatePicker;
@@ -29,6 +32,53 @@ public class MainWindowController {
 
     @FXML
     private TabPane mainTabPane;
+
+    @FXML
+    public void initialize() {
+        // Așteptăm ca fereastra să fie complet încărcată înainte de a ajusta vizibilitatea
+        Platform.runLater(this::adjustUIForUserRole);
+    }
+
+    /**
+     * Ajustează vizibilitatea elementelor UI în funcție de rolul utilizatorului
+     */
+    private void adjustUIForUserRole() {
+        com.magsell.models.User currentUser = App.getCurrentUser();
+        if (currentUser == null) return;
+
+        boolean isAdmin = currentUser.isAdmin();
+        boolean canManageProducts = currentUser.canManageProducts();
+        boolean canManageCategories = currentUser.canManageCategories();
+        boolean canManageSales = currentUser.canManageSales();
+        boolean canViewReports = currentUser.canViewReports();
+
+        // Ajustăm tab-urile - eliminăm cele care nu sunt permise
+        try {
+            javafx.collections.ObservableList<Tab> tabs = mainTabPane.getTabs();
+            tabs.removeIf(tab -> {
+                String tabText = tab.getText();
+                // Dashboard și POS-Vânzări sunt mereu vizibile
+                if ("Dashboard".equals(tabText) || "POS - Vânzări".equals(tabText)) {
+                    return false;
+                }
+                // Produse - necesită permisiune
+                if ("Produse".equals(tabText) && !canManageProducts) {
+                    return true; // Eliminăm tab-ul Produse
+                }
+                // Categorii - necesită permisiune
+                if ("Categorii".equals(tabText) && !canManageCategories) {
+                    return true; // Eliminăm tab-ul Categorii
+                }
+                // Vânzări - necesită permisiune
+                if ("Vânzări".equals(tabText) && !canManageSales) {
+                    return true; // Eliminăm tab-ul Vânzări
+                }
+                return false;
+            });
+        } catch (Exception e) {
+            logger.error("Error adjusting tab visibility", e);
+        }
+    }
 
     @FXML
     private void handleExit() {
@@ -113,22 +163,103 @@ public class MainWindowController {
     }
 
     @FXML
+    private void handleUserPermissions() {
+        try {
+            com.magsell.models.User cu = App.getCurrentUser();
+            if (cu == null || !"admin".equalsIgnoreCase(cu.getRole())) {
+                Alert a = new Alert(Alert.AlertType.ERROR);
+                a.setTitle("Access denied");
+                a.setHeaderText("Acces interzis");
+                a.setContentText("Doar utilizatorii cu rol 'admin' pot gestiona permisiunile.");
+                a.showAndWait();
+                return;
+            }
+
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
+                    getClass().getResource("/com/magsell/ui/fxml/UserManagement.fxml"));
+            javafx.scene.Parent root = loader.load();
+
+            javafx.stage.Stage stage = new javafx.stage.Stage();
+            stage.setTitle("Gestionare Permisiuni Utilizatori");
+            stage.setScene(new javafx.scene.Scene(root, 900, 600));
+            stage.showAndWait();
+
+        } catch (Exception e) {
+            logger.error("Eroare la deschiderea managerului de permisiuni", e);
+            Alert alert = new Alert(AlertType.ERROR);
+            alert.setTitle("Eroare");
+            alert.setContentText("Eroare la deschiderea managerului de permisiuni: " + e.getMessage());
+            alert.showAndWait();
+        }
+    }
+
+    @FXML
     private void handleAddProduct() {
+        com.magsell.models.User currentUser = App.getCurrentUser();
+        if (currentUser == null || !currentUser.canManageProducts()) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Acces interzis");
+            alert.setHeaderText("Permisiuni insuficiente");
+            alert.setContentText("Nu aveți permisiunea de a gestiona produse.");
+            alert.showAndWait();
+            return;
+        }
         openProductEditor();
     }
 
     @FXML
     private void handleViewProducts() {
+        com.magsell.models.User currentUser = App.getCurrentUser();
+        if (currentUser == null || !currentUser.canManageProducts()) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Acces interzis");
+            alert.setHeaderText("Permisiuni insuficiente");
+            alert.setContentText("Nu aveți permisiunea de a vizualiza produse.");
+            alert.showAndWait();
+            return;
+        }
         openProductList();
     }
 
     @FXML
+    private void handleManageCategories() {
+        com.magsell.models.User currentUser = App.getCurrentUser();
+        if (currentUser == null || !currentUser.canManageCategories()) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Acces interzis");
+            alert.setHeaderText("Permisiuni insuficiente");
+            alert.setContentText("Nu aveți permisiunea de a gestiona categorii.");
+            alert.showAndWait();
+            return;
+        }
+        openCategoryManager();
+    }
+
+    @FXML
     private void handleNewSale() {
+        com.magsell.models.User currentUser = App.getCurrentUser();
+        if (currentUser == null || !currentUser.canManageSales()) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Acces interzis");
+            alert.setHeaderText("Permisiuni insuficiente");
+            alert.setContentText("Nu aveți permisiunea de a gestiona vânzări.");
+            alert.showAndWait();
+            return;
+        }
         showNotImplemented("Nouă vânzare");
     }
 
     @FXML
     private void handleViewSales() {
+        com.magsell.models.User currentUser = App.getCurrentUser();
+        if (currentUser == null || !currentUser.canManageSales()) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Acces interzis");
+            alert.setHeaderText("Permisiuni insuficiente");
+            alert.setContentText("Nu aveți permisiunea de a vizualiza vânzări.");
+            alert.showAndWait();
+            return;
+        }
         // Selectează tab-ul de vânzări
         if (mainTabPane != null && mainTabPane.getTabs().size() > 3) {
             mainTabPane.getSelectionModel().select(3);
@@ -257,8 +388,6 @@ public class MainWindowController {
         try {
             javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
                     getClass().getResource("/com/magsell/ui/fxml/ProductList.fxml"));
-            ProductController controller = new ProductController();
-            loader.setController(controller);
             javafx.scene.Parent root = loader.load();
 
             javafx.stage.Stage stage = new javafx.stage.Stage();
@@ -271,6 +400,73 @@ public class MainWindowController {
             alert.setTitle("Eroare");
             alert.setContentText("Eroare la deschiderea listei: " + e.getMessage());
             alert.showAndWait();
+        }
+    }
+
+    /**
+     * Deschide fereastra de gestionare a categoriilor
+     */
+    private void openCategoryManager() {
+        try {
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
+                    getClass().getResource("/com/magsell/ui/fxml/CategoryManager.fxml"));
+            javafx.scene.Parent root = loader.load();
+
+            javafx.stage.Stage stage = new javafx.stage.Stage();
+            stage.setTitle("Gestionare Categorii");
+            stage.setScene(new javafx.scene.Scene(root, 800, 500));
+            stage.showAndWait();
+            
+            // După ce se închide fereastra de categorii, reîncărcăm categoriile în ProductController
+            refreshProductCategories();
+            
+        } catch (Exception e) {
+            logger.error("Eroare la deschiderea managerului de categorii", e);
+            Alert alert = new Alert(AlertType.ERROR);
+            alert.setTitle("Eroare");
+            alert.setContentText("Eroare la deschiderea managerului de categorii: " + e.getMessage());
+            alert.showAndWait();
+        }
+    }
+
+    /**
+     * Reîncarcă categoriile în toate instanțele de ProductController deschise
+     */
+    private void refreshProductCategories() {
+        // Găsim toate tab-urile deschise și reîncărcăm categoriile
+        if (mainTabPane != null) {
+            mainTabPane.getTabs().forEach(tab -> {
+                try {
+                    // Căutăm ProductController în tab-uri
+                    javafx.scene.Node content = tab.getContent();
+                    if (content != null) {
+                        // Căutăm recursiv ProductController
+                        findAndRefreshProductControllers(content);
+                    }
+                } catch (Exception e) {
+                    logger.debug("Nu s-a putut reîncărca categoriile pentru tab: " + tab.getText(), e);
+                }
+            });
+        }
+    }
+
+    /**
+     * Caută recursiv ProductController în nodurile UI
+     */
+    private void findAndRefreshProductControllers(javafx.scene.Node node) {
+        if (node instanceof javafx.scene.Parent) {
+            javafx.scene.Parent parent = (javafx.scene.Parent) node;
+            
+            // Verificăm dacă acest nod conține ProductController
+            Object userData = parent.getUserData();
+            if (userData instanceof ProductController) {
+                ((ProductController) userData).refreshCategories();
+            }
+            
+            // Căutăm în copiii nodului
+            for (javafx.scene.Node child : parent.getChildrenUnmodifiable()) {
+                findAndRefreshProductControllers(child);
+            }
         }
     }
 }

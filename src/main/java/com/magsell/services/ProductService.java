@@ -25,7 +25,7 @@ public class ProductService {
      * Creează un produs nou.
      */
     public void createProduct(Product product) throws SQLException {
-        String sql = "INSERT INTO products (name, description, price, quantity, category, image_path) VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO products (name, description, price, quantity, category, category_id, image_path) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = dbService.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -34,7 +34,12 @@ public class ProductService {
             pstmt.setBigDecimal(3, product.getPrice());
             pstmt.setInt(4, product.getQuantity());
             pstmt.setString(5, product.getCategory());
-            pstmt.setString(6, product.getImagePath());
+            if (product.getCategoryId() != null) {
+                pstmt.setInt(6, product.getCategoryId());
+            } else {
+                pstmt.setNull(6, java.sql.Types.INTEGER);
+            }
+            pstmt.setString(7, product.getImagePath());
 
             pstmt.executeUpdate();
             logger.info("Produs creat: " + product.getName());
@@ -83,7 +88,7 @@ public class ProductService {
      * Actualizează un produs.
      */
     public void updateProduct(Product product) throws SQLException {
-        String sql = "UPDATE products SET name = ?, description = ?, price = ?, quantity = ?, category = ?, image_path = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+        String sql = "UPDATE products SET name = ?, description = ?, price = ?, quantity = ?, category = ?, category_id = ?, image_path = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
 
         try (Connection conn = dbService.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -92,8 +97,13 @@ public class ProductService {
             pstmt.setBigDecimal(3, product.getPrice());
             pstmt.setInt(4, product.getQuantity());
             pstmt.setString(5, product.getCategory());
-            pstmt.setString(6, product.getImagePath());
-            pstmt.setInt(7, product.getId());
+            if (product.getCategoryId() != null) {
+                pstmt.setInt(6, product.getCategoryId());
+            } else {
+                pstmt.setNull(6, java.sql.Types.INTEGER);
+            }
+            pstmt.setString(7, product.getImagePath());
+            pstmt.setInt(8, product.getId());
 
             pstmt.executeUpdate();
             logger.info("Produs actualizat: " + product.getName());
@@ -143,6 +153,12 @@ public class ProductService {
         p.setPrice(rs.getBigDecimal("price"));
         p.setQuantity(rs.getInt("quantity"));
         p.setCategory(rs.getString("category"));
+        try {
+            p.setCategoryId(rs.getInt("category_id"));
+        } catch (SQLException e) {
+            // Coloana poate să nu existe în baze de date vechi
+            p.setCategoryId(null);
+        }
         try {
             p.setImagePath(rs.getString("image_path"));
         } catch (SQLException e) {

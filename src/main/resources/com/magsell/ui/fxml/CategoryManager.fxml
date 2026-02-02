@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.magsell.ui.controllers.CategoryController">
+    <top>
+        <VBox spacing="10" style="-fx-padding: 10;">
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label text="Categorii Produse" style="-fx-font-size: 18; -fx-font-weight: bold;"/>
+                <Separator HBox.hgrow="ALWAYS" orientation="HORIZONTAL"/>
+                <Button fx:id="newButton" text="+ Adaugă Categorie" style="-fx-padding: 8;"/>
+                <Button fx:id="editButton" text="Editează" style="-fx-padding: 8;"/>
+                <Button fx:id="deleteButton" text="Șterge" style="-fx-padding: 8;"/>
+            </HBox>
+        </VBox>
+    </top>
+
+    <center>
+        <SplitPane orientation="HORIZONTAL" VBox.vgrow="ALWAYS">
+            <TableView fx:id="categoryTable" SplitPane.resizableWithParent="true">
+                <columns>
+                    <TableColumn fx:id="idColumn" text="ID" prefWidth="50"/>
+                    <TableColumn fx:id="nameColumn" text="Nume Categorie" prefWidth="200"/>
+                    <TableColumn fx:id="descriptionColumn" text="Descriere" prefWidth="300"/>
+                </columns>
+            </TableView>
+            
+            <VBox spacing="15" style="-fx-padding: 20;" minWidth="300" SplitPane.resizableWithParent="true">
+                <Label text="Detalii Categorie" style="-fx-font-size: 16; -fx-font-weight: bold;"/>
+                
+                <HBox spacing="10">
+                    <Label text="Nume:" prefWidth="100"/>
+                    <TextField fx:id="nameField" promptText="Introduceți nume categorie" HBox.hgrow="ALWAYS"/>
+                </HBox>
+
+                <VBox spacing="5">
+                    <Label text="Descriere:"/>
+                    <TextArea fx:id="descriptionField" promptText="Introduceți descriere" prefRowCount="4" 
+                              VBox.vgrow="ALWAYS" wrapText="true"/>
+                </VBox>
+
+                <Separator/>
+
+                <HBox spacing="10" alignment="CENTER_RIGHT">
+                    <Button fx:id="saveButton" text="Salvează" style="-fx-padding: 8;" visible="false"/>
+                    <Button fx:id="cancelButton" text="Anulează" style="-fx-padding: 8;" visible="false"/>
+                </HBox>
+            </VBox>
+        </SplitPane>
+    </center>
+</BorderPane>

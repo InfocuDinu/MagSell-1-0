@@ -12,11 +12,14 @@
                 <Label text="Produse" style="-fx-font-size: 18; -fx-font-weight: bold;"/>
                 <Separator HBox.hgrow="ALWAYS" orientation="HORIZONTAL"/>
                 <Button text="+ Adaugă Produs" onAction="#handleAddProduct" style="-fx-padding: 8;"/>
+                <Button text="Editează" onAction="#handleEditProduct" style="-fx-padding: 8;"/>
+                <Button text="Șterge" onAction="#handleDeleteProduct" style="-fx-padding: 8;"/>
             </HBox>
             <HBox spacing="5" alignment="CENTER_LEFT">
                 <Label text="Cauta:"/>
                 <TextField fx:id="searchField" promptText="Filtrare dupa nume..." HBox.hgrow="ALWAYS" onKeyReleased="#handleSearchProducts"/>
                 <ComboBox fx:id="categoryCombo" promptText="Categorie..." onAction="#handleFilterByCategory"/>
+                <Button text="🔄 Reîncarcă Categorii" onAction="#handleRefreshCategories" style="-fx-padding: 8;"/>
             </HBox>
         </VBox>
     </top>

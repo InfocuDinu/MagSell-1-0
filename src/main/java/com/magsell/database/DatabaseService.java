@@ -63,6 +63,7 @@ public class DatabaseService {
     private void createTables() throws SQLException {
         String[] tables = {
             createUsersTable(),
+            createCategoriesTable(),
             createProductsTable(),
             createSalesTable(),
             createCustomersTable()
@@ -77,6 +78,12 @@ public class DatabaseService {
             
             // Adaugă coloana image_path dacă nu există (migrare pentru baze de date existente)
             addImagePathColumnIfNotExists(stmt);
+            
+            // Adaugă coloana category_id dacă nu există (migrare pentru baze de date existente)
+            addCategoryIdColumnIfNotExists(stmt);
+            
+            // Adaugă coloanele de permisiuni dacă nu există (migrare pentru baze de date existente)
+            addPermissionColumnsIfNotExists(stmt);
             
             // Creează utilizatorul admin implicit
             ensureDefaultAdmin();
@@ -108,6 +115,18 @@ public class DatabaseService {
             """;
     }
 
+    private String createCategoriesTable() {
+        return """
+            CREATE TABLE IF NOT EXISTS categories (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                description TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """;
+    }
+
     private String createProductsTable() {
         return """
             CREATE TABLE IF NOT EXISTS products (
@@ -117,9 +136,11 @@ public class DatabaseService {
                 price DECIMAL(10,2) NOT NULL,
                 quantity INTEGER NOT NULL,
                 category TEXT,
+                category_id INTEGER,
                 image_path TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (category_id) REFERENCES categories(id)
             )
             """;
     }
@@ -137,6 +158,49 @@ public class DatabaseService {
         } catch (SQLException e) {
             // Coloana există deja sau altă eroare - ignorăm
             logger.debug("Coloana image_path există deja sau eroare la adăugare: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Adaugă coloana category_id la tabelul products dacă nu există (pentru migrare).
+     */
+    private void addCategoryIdColumnIfNotExists(Statement stmt) {
+        try {
+            // Verifică dacă coloana există
+            stmt.execute("PRAGMA table_info(products)");
+            // Dacă nu există, o adaugă
+            stmt.execute("ALTER TABLE products ADD COLUMN category_id INTEGER");
+            logger.info("Coloana category_id adăugată la tabelul products");
+        } catch (SQLException e) {
+            // Coloana există deja sau altă eroare - ignorăm
+            logger.debug("Coloana category_id există deja sau eroare la adăugare: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Adaugă coloanele de permisiuni la tabelul users dacă nu există (pentru migrare).
+     */
+    private void addPermissionColumnsIfNotExists(Statement stmt) {
+        try {
+            String[] permissionColumns = {
+                "can_manage_products BOOLEAN DEFAULT 0",
+                "can_manage_categories BOOLEAN DEFAULT 0", 
+                "can_manage_users BOOLEAN DEFAULT 0",
+                "can_view_reports BOOLEAN DEFAULT 0",
+                "can_manage_sales BOOLEAN DEFAULT 0"
+            };
+            
+            for (String column : permissionColumns) {
+                try {
+                    stmt.execute("ALTER TABLE users ADD COLUMN " + column);
+                    logger.info("Coloana de permisiuni adăugată: " + column);
+                } catch (SQLException e) {
+                    // Coloana există deja - ignorăm
+                    logger.debug("Coloana de permisiuni există deja: " + column);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Eroare la adăugarea coloanelor de permisiuni", e);
         }
     }
 

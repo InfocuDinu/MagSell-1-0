@@ -17,12 +17,15 @@
             <Menu text="Produse">
                 <MenuItem text="Adăugare produs" onAction="#handleAddProduct"/>
                 <MenuItem text="Vezi toate produsele" onAction="#handleViewProducts"/>
+                <SeparatorMenuItem/>
+                <MenuItem text="Gestionare categorii" onAction="#handleManageCategories"/>
             </Menu>
             <Menu text="Vânzări">
                 <MenuItem text="Vezi vânzări" onAction="#handleViewSales"/>
             </Menu>
             <Menu text="Utilizatori">
                 <MenuItem text="Gestionare utilizatori" onAction="#handleManageUsers"/>
+                <MenuItem text="Permisiuni utilizatori" onAction="#handleUserPermissions"/>
             </Menu>
             <Menu text="Ajutor">
                 <MenuItem text="Despre" onAction="#handleAbout"/>
