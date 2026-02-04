@@ -16,6 +16,11 @@ public class Partner {
     private String email;
     private String contactPerson;
     private String bankAccount;
+    private String cui;
+    private String regCom;
+    private String city;
+    private String county;
+    private String country;
     private boolean active;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -107,6 +112,49 @@ public class Partner {
     
     public void setActive(boolean active) {
         this.active = active;
+    }
+    
+    public String getCui() {
+        return cui != null ? cui : code; // Fallback to code field
+    }
+    
+    public void setCui(String cui) {
+        this.cui = cui;
+        if (cui != null) {
+            this.code = cui; // Keep code in sync
+        }
+    }
+    
+    public String getRegCom() {
+        return regCom;
+    }
+    
+    public void setRegCom(String regCom) {
+        this.regCom = regCom;
+    }
+    
+    public String getCity() {
+        return city;
+    }
+    
+    public void setCity(String city) {
+        this.city = city;
+    }
+    
+    public String getCounty() {
+        return county;
+    }
+    
+    public void setCounty(String county) {
+        this.county = county;
+    }
+    
+    public String getCountry() {
+        return country != null ? country : "România";
+    }
+    
+    public void setCountry(String country) {
+        this.country = country;
     }
     
     public LocalDateTime getCreatedAt() {

@@ -1,13 +1,11 @@
 package com.magsell.services;
 
+import com.magsell.models.*;
 import com.magsell.database.DatabaseService;
-import com.magsell.models.Invoice;
-import com.magsell.models.InvoiceItem;
-import com.magsell.models.ReceptionNote;
-import com.magsell.models.ReceptionNoteItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -15,672 +13,569 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Serviciu pentru managementul facturilor și notelor de recepție
+ * Serviciu pentru managementul facturilor fiscale
+ * Respectă principiile SOLID și legislația fiscală română
  */
 public class InvoiceService {
     private static final Logger logger = LoggerFactory.getLogger(InvoiceService.class);
+    
     private final DatabaseService databaseService;
-    private final SpvIntegrationService spvService;
-
+    private final ProductService productService;
+    private final PartnerService partnerService;
+    private final InventoryService inventoryService;
+    
     public InvoiceService() {
         this.databaseService = DatabaseService.getInstance();
-        this.spvService = new SpvIntegrationService();
-        initializeDatabase();
+        this.productService = new ProductService();
+        this.partnerService = new PartnerService();
+        this.inventoryService = new InventoryService();
     }
-
+    
     /**
-     * Inițializează tabelele pentru facturi și note de recepție
+     * Creează o nouă factură cu validări complete
      */
-    private void initializeDatabase() {
-        try (Connection conn = databaseService.getConnection()) {
-            // Tabela pentru facturi
-            String createInvoicesTable = """
-                CREATE TABLE IF NOT EXISTS invoices (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    invoice_number TEXT NOT NULL,
-                    series TEXT,
-                    issue_date DATE,
-                    due_date DATE,
-                    supplier_name TEXT,
-                    supplier_cif TEXT,
-                    supplier_address TEXT,
-                    total_amount REAL,
-                    vat_amount REAL,
-                    currency TEXT DEFAULT 'RON',
-                    status TEXT DEFAULT 'imported',
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    xml_content TEXT,
-                    pdf_path TEXT
-                )
-                """;
-
-            // Tabela pentru elementele facturilor
-            String createInvoiceItemsTable = """
-                CREATE TABLE IF NOT EXISTS invoice_items (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    invoice_id INTEGER,
-                    product_name TEXT,
-                    product_code TEXT,
-                    description TEXT,
-                    quantity REAL,
-                    unit_of_measure TEXT DEFAULT 'buc',
-                    unit_price REAL,
-                    total_price REAL,
-                    vat_rate REAL DEFAULT 19.0,
-                    vat_amount REAL,
-                    category TEXT,
-                    FOREIGN KEY (invoice_id) REFERENCES invoices (id)
-                )
-                """;
-
-            // Tabela pentru note de recepție
-            String createReceptionNotesTable = """
-                CREATE TABLE IF NOT EXISTS reception_notes (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    note_number TEXT NOT NULL,
-                    series TEXT,
-                    reception_date DATE,
-                    invoice_date DATE,
-                    invoice_number TEXT,
-                    supplier_name TEXT,
-                    supplier_cif TEXT,
-                    supplier_address TEXT,
-                    total_amount REAL,
-                    vat_amount REAL,
-                    currency TEXT DEFAULT 'RON',
-                    status TEXT DEFAULT 'draft',
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    invoice_id INTEGER,
-                    created_by TEXT,
-                    notes TEXT,
-                    FOREIGN KEY (invoice_id) REFERENCES invoices (id)
-                )
-                """;
-
-            // Tabela pentru elementele notelor de recepție
-            String createReceptionNoteItemsTable = """
-                CREATE TABLE IF NOT EXISTS reception_note_items (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    reception_note_id INTEGER,
-                    product_name TEXT,
-                    product_code TEXT,
-                    description TEXT,
-                    quantity REAL,
-                    unit_of_measure TEXT DEFAULT 'buc',
-                    unit_price REAL,
-                    total_price REAL,
-                    vat_rate REAL DEFAULT 19.0,
-                    vat_amount REAL,
-                    category TEXT,
-                    received_quantity REAL DEFAULT 0,
-                    batch_number TEXT,
-                    expiry_date DATE,
-                    storage_location TEXT,
-                    FOREIGN KEY (reception_note_id) REFERENCES reception_notes (id)
-                )
-                """;
-
-            try (Statement stmt = conn.createStatement()) {
-                stmt.execute(createInvoicesTable);
-                stmt.execute(createInvoiceItemsTable);
-                stmt.execute(createReceptionNotesTable);
-                stmt.execute(createReceptionNoteItemsTable);
-                logger.info("Invoice and reception note tables initialized successfully");
-            }
-
-        } catch (SQLException e) {
-            logger.error("Error initializing invoice database", e);
-        }
-    }
-
-    /**
-     * Importă facturi din SPV
-     */
-    public List<Invoice> importInvoicesFromSPV(LocalDate startDate, LocalDate endDate, String cif) {
-        try {
-            // Importăm facturile din SPV
-            List<Invoice> invoices = spvService.importInvoicesFromSPV(startDate, endDate, cif);
-            
-            // Salvăm facturile în baza de date
-            for (Invoice invoice : invoices) {
-                saveInvoice(invoice);
-            }
-            
-            logger.info("Imported and saved {} invoices from SPV", invoices.size());
-            return invoices;
-            
-        } catch (Exception e) {
-            logger.error("Error importing invoices from SPV", e);
-            return new ArrayList<>();
-        }
-    }
-
-    /**
-     * Salvează o factură în baza de date
-     */
-    public Invoice saveInvoice(Invoice invoice) {
-        try (Connection conn = databaseService.getConnection()) {
-            // Verificăm dacă factura există deja
-            String checkSql = "SELECT id FROM invoices WHERE invoice_number = ? AND series = ?";
-            try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
-                checkStmt.setString(1, invoice.getInvoiceNumber());
-                checkStmt.setString(2, invoice.getSeries());
-                
-                ResultSet rs = checkStmt.executeQuery();
-                if (rs.next()) {
-                    // Actualizăm factura existentă
-                    invoice.setId(rs.getInt("id"));
-                    updateInvoice(invoice);
-                    return invoice;
-                }
-            }
-
-            // Inserăm factura nouă
-            String insertSql = """
-                INSERT INTO invoices (invoice_number, series, issue_date, due_date, 
-                    supplier_name, supplier_cif, supplier_address, total_amount, 
-                    vat_amount, currency, status, xml_content, pdf_path)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """;
-
-            try (PreparedStatement stmt = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
-                stmt.setString(1, invoice.getInvoiceNumber());
-                stmt.setString(2, invoice.getSeries());
-                stmt.setDate(3, invoice.getIssueDate() != null ? Date.valueOf(invoice.getIssueDate()) : null);
-                stmt.setDate(4, invoice.getDueDate() != null ? Date.valueOf(invoice.getDueDate()) : null);
-                stmt.setString(5, invoice.getSupplierName());
-                stmt.setString(6, invoice.getSupplierCif());
-                stmt.setString(7, invoice.getSupplierAddress());
-                stmt.setDouble(8, invoice.getTotalAmount());
-                stmt.setDouble(9, invoice.getVatAmount());
-                stmt.setString(10, invoice.getCurrency());
-                stmt.setString(11, invoice.getStatus());
-                stmt.setString(12, invoice.getXmlContent());
-                stmt.setString(13, invoice.getPdfPath());
-
-                int affectedRows = stmt.executeUpdate();
-                if (affectedRows > 0) {
-                    try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-                        if (generatedKeys.next()) {
-                            invoice.setId(generatedKeys.getInt(1));
-                        }
-                    }
-                }
-            }
-
-            // Salvăm elementele facturii
-            if (invoice.getItems() != null) {
-                for (InvoiceItem item : invoice.getItems()) {
-                    item.setInvoiceId(invoice.getId());
-                    saveInvoiceItem(item);
-                }
-            }
-
-            logger.info("Saved invoice: {}", invoice.getFullInvoiceNumber());
-            return invoice;
-
-        } catch (SQLException e) {
-            logger.error("Error saving invoice", e);
-            return null;
-        }
-    }
-
-    /**
-     * Actualizează o factură existentă
-     */
-    private void updateInvoice(Invoice invoice) {
-        try (Connection conn = databaseService.getConnection()) {
-            String updateSql = """
-                UPDATE invoices SET issue_date = ?, due_date = ?, supplier_name = ?, 
-                    supplier_cif = ?, supplier_address = ?, total_amount = ?, 
-                    vat_amount = ?, currency = ?, status = ?, updated_at = CURRENT_TIMESTAMP,
-                    xml_content = ?, pdf_path = ?
-                WHERE id = ?
-                """;
-
-            try (PreparedStatement stmt = conn.prepareStatement(updateSql)) {
-                stmt.setDate(1, invoice.getIssueDate() != null ? Date.valueOf(invoice.getIssueDate()) : null);
-                stmt.setDate(2, invoice.getDueDate() != null ? Date.valueOf(invoice.getDueDate()) : null);
-                stmt.setString(3, invoice.getSupplierName());
-                stmt.setString(4, invoice.getSupplierCif());
-                stmt.setString(5, invoice.getSupplierAddress());
-                stmt.setDouble(6, invoice.getTotalAmount());
-                stmt.setDouble(7, invoice.getVatAmount());
-                stmt.setString(8, invoice.getCurrency());
-                stmt.setString(9, invoice.getStatus());
-                stmt.setString(10, invoice.getXmlContent());
-                stmt.setString(11, invoice.getPdfPath());
-                stmt.setInt(12, invoice.getId());
-
-                stmt.executeUpdate();
-            }
-
-        } catch (SQLException e) {
-            logger.error("Error updating invoice", e);
-        }
-    }
-
-    /**
-     * Salvează un element de factură
-     */
-    private void saveInvoiceItem(InvoiceItem item) {
-        try (Connection conn = databaseService.getConnection()) {
-            String insertSql = """
-                INSERT INTO invoice_items (invoice_id, product_name, product_code, description, 
-                    quantity, unit_of_measure, unit_price, total_price, vat_rate, vat_amount, category)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """;
-
-            try (PreparedStatement stmt = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
-                stmt.setInt(1, item.getInvoiceId());
-                stmt.setString(2, item.getProductName());
-                stmt.setString(3, item.getProductCode());
-                stmt.setString(4, item.getDescription());
-                stmt.setDouble(5, item.getQuantity());
-                stmt.setString(6, item.getUnitOfMeasure());
-                stmt.setDouble(7, item.getUnitPrice());
-                stmt.setDouble(8, item.getTotalPrice());
-                stmt.setDouble(9, item.getVatRate());
-                stmt.setDouble(10, item.getVatAmount());
-                stmt.setString(11, item.getCategory());
-
-                stmt.executeUpdate();
-            }
-
-        } catch (SQLException e) {
-            logger.error("Error saving invoice item", e);
-        }
-    }
-
-    /**
-     * Generează o notă de recepție dintr-o factură
-     */
-    public ReceptionNote generateReceptionNoteFromInvoice(int invoiceId, String createdBy) {
-        try {
-            // Obținem factura
-            Invoice invoice = getInvoiceById(invoiceId);
-            if (invoice == null) {
-                logger.error("Invoice not found: {}", invoiceId);
-                return null;
-            }
-
-            // Creăm nota de recepție
-            ReceptionNote receptionNote = new ReceptionNote();
-            receptionNote.setInvoiceId(invoiceId);
-            receptionNote.setInvoiceNumber(invoice.getFullInvoiceNumber());
-            receptionNote.setInvoiceDate(invoice.getIssueDate());
-            receptionNote.setSupplierName(invoice.getSupplierName());
-            receptionNote.setSupplierCif(invoice.getSupplierCif());
-            receptionNote.setSupplierAddress(invoice.getSupplierAddress());
-            receptionNote.setTotalAmount(invoice.getTotalAmount());
-            receptionNote.setVatAmount(invoice.getVatAmount());
-            receptionNote.setCurrency(invoice.getCurrency());
-            receptionNote.setCreatedBy(createdBy);
-
-            // Generăm numărul notei de recepție
-            receptionNote.setNoteNumber(generateReceptionNoteNumber());
-            receptionNote.setSeries("NR");
-
-            // Creăm elementele notei de recepție
-            List<ReceptionNoteItem> receptionItems = new ArrayList<>();
-            if (invoice.getItems() != null) {
-                for (InvoiceItem invoiceItem : invoice.getItems()) {
-                    ReceptionNoteItem receptionItem = new ReceptionNoteItem();
-                    receptionItem.setProductName(invoiceItem.getProductName());
-                    receptionItem.setProductCode(invoiceItem.getProductCode());
-                    receptionItem.setDescription(invoiceItem.getDescription());
-                    receptionItem.setQuantity(invoiceItem.getQuantity());
-                    receptionItem.setUnitOfMeasure(invoiceItem.getUnitOfMeasure());
-                    receptionItem.setUnitPrice(invoiceItem.getUnitPrice());
-                    receptionItem.setTotalPrice(invoiceItem.getTotalPrice());
-                    receptionItem.setVatRate(invoiceItem.getVatRate());
-                    receptionItem.setCategory(invoiceItem.getCategory());
-                    receptionItem.setReceivedQuantity(invoiceItem.getQuantity()); // Inițial setăm cantitatea facturată
-
-                    receptionItems.add(receptionItem);
-                }
-            }
-            receptionNote.setItems(receptionItems);
-
-            // Salvăm nota de recepție
-            ReceptionNote savedNote = saveReceptionNote(receptionNote);
-
-            // Actualizăm statusul facturii
-            invoice.setStatus("processed");
-            updateInvoice(invoice);
-
-            logger.info("Generated reception note {} from invoice {}", savedNote.getFullNoteNumber(), invoice.getFullInvoiceNumber());
-            return savedNote;
-
-        } catch (Exception e) {
-            logger.error("Error generating reception note from invoice", e);
-            return null;
-        }
-    }
-
-    /**
-     * Salvează o notă de recepție
-     */
-    public ReceptionNote saveReceptionNote(ReceptionNote receptionNote) {
-        try (Connection conn = databaseService.getConnection()) {
-            // Generăm numărul notei de recepție dacă nu există
-            if (receptionNote.getNoteNumber() == null || receptionNote.getNoteNumber().isEmpty()) {
-                receptionNote.setNoteNumber(generateReceptionNoteNumber());
-            }
-            
-            // Setăm seria dacă nu există
-            if (receptionNote.getSeries() == null || receptionNote.getSeries().isEmpty()) {
-                receptionNote.setSeries("NR");
-            }
-            
-            String insertSql = """
-                INSERT INTO reception_notes (note_number, series, reception_date, invoice_date, 
-                    invoice_number, supplier_name, supplier_cif, supplier_address, 
-                    total_amount, vat_amount, currency, status, invoice_id, created_by, notes)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """;
-
-            try (PreparedStatement stmt = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
-                stmt.setString(1, receptionNote.getNoteNumber());
-                stmt.setString(2, receptionNote.getSeries());
-                stmt.setDate(3, Date.valueOf(receptionNote.getReceptionDate()));
-                stmt.setDate(4, receptionNote.getInvoiceDate() != null ? Date.valueOf(receptionNote.getInvoiceDate()) : null);
-                stmt.setString(5, receptionNote.getInvoiceNumber());
-                stmt.setString(6, receptionNote.getSupplierName());
-                stmt.setString(7, receptionNote.getSupplierCif());
-                stmt.setString(8, receptionNote.getSupplierAddress());
-                stmt.setDouble(9, receptionNote.getTotalAmount());
-                stmt.setDouble(10, receptionNote.getVatAmount());
-                stmt.setString(11, receptionNote.getCurrency());
-                stmt.setString(12, receptionNote.getStatus());
-                stmt.setInt(13, receptionNote.getInvoiceId());
-                stmt.setString(14, receptionNote.getCreatedBy());
-                stmt.setString(15, receptionNote.getNotes());
-
-                int affectedRows = stmt.executeUpdate();
-                if (affectedRows > 0) {
-                    try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-                        if (generatedKeys.next()) {
-                            receptionNote.setId(generatedKeys.getInt(1));
-                        }
-                    }
-                }
-            }
-
-            // Salvăm elementele notei de recepție
-            if (receptionNote.getItems() != null) {
-                for (ReceptionNoteItem item : receptionNote.getItems()) {
-                    item.setReceptionNoteId(receptionNote.getId());
-                    saveReceptionNoteItem(item);
-                }
-            }
-
-            logger.info("Saved reception note: {}", receptionNote.getFullNoteNumber());
-            return receptionNote;
-
-        } catch (SQLException e) {
-            logger.error("Error saving reception note", e);
-            return null;
-        }
-    }
-
-    /**
-     * Salvează un element de notă de recepție
-     */
-    private void saveReceptionNoteItem(ReceptionNoteItem item) {
-        try (Connection conn = databaseService.getConnection()) {
-            String insertSql = """
-                INSERT INTO reception_note_items (reception_note_id, product_name, product_code, 
-                    description, quantity, unit_of_measure, unit_price, total_price, vat_rate, 
-                    vat_amount, category, received_quantity, batch_number, expiry_date, storage_location)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """;
-
-            try (PreparedStatement stmt = conn.prepareStatement(insertSql)) {
-                stmt.setInt(1, item.getReceptionNoteId());
-                stmt.setString(2, item.getProductName());
-                stmt.setString(3, item.getProductCode());
-                stmt.setString(4, item.getDescription());
-                stmt.setDouble(5, item.getQuantity());
-                stmt.setString(6, item.getUnitOfMeasure());
-                stmt.setDouble(7, item.getUnitPrice());
-                stmt.setDouble(8, item.getTotalPrice());
-                stmt.setDouble(9, item.getVatRate());
-                stmt.setDouble(10, item.getVatAmount());
-                stmt.setString(11, item.getCategory());
-                stmt.setDouble(12, item.getReceivedQuantity());
-                stmt.setString(13, item.getBatchNumber());
-                stmt.setDate(14, item.getExpiryDate() != null ? Date.valueOf(item.getExpiryDate()) : null);
-                stmt.setString(15, item.getStorageLocation());
-
-                stmt.executeUpdate();
-            }
-
-        } catch (SQLException e) {
-            logger.error("Error saving reception note item", e);
-        }
-    }
-
-    /**
-     * Generează un număr unic pentru nota de recepție
-     */
-    private String generateReceptionNoteNumber() {
-        try (Connection conn = databaseService.getConnection()) {
-            String sql = "SELECT COUNT(*) as count FROM reception_notes WHERE series = 'NR' AND strftime('%Y', created_at) = strftime('%Y', 'now')";
-            
-            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                ResultSet rs = stmt.executeQuery();
-                if (rs.next()) {
-                    int count = rs.getInt("count") + 1;
-                    return String.format("%04d", count);
-                }
-            }
-        } catch (SQLException e) {
-            logger.error("Error generating reception note number", e);
-        }
+    public Invoice createInvoice(Invoice invoice) throws Exception {
+        logger.info("Creating new invoice for partner: {}", invoice.getPartnerId());
         
-        return "0001";
+        // Validări de business
+        validateInvoice(invoice);
+        
+        Connection conn = null;
+        try {
+            conn = databaseService.getConnection();
+            conn.setAutoCommit(false); // Start transaction
+            
+            // Generează număr factură
+            String series = invoice.getSeries();
+            if (series == null) {
+                series = getNextSeries(conn, 'F');
+            }
+            Integer number = getNextNumber(conn, series, LocalDate.now().getYear());
+            
+            invoice.setSeries(series);
+            invoice.setNumber(number);
+            invoice.setStatus("draft");
+            invoice.setCreatedAt(LocalDateTime.now());
+            invoice.setUpdatedAt(LocalDateTime.now());
+            
+            // Salvează factura
+            Integer invoiceId = insertInvoice(conn, invoice);
+            invoice.setId(invoiceId);
+            
+            // Salvează item-urile și actualizează stocurile
+            for (InvoiceItem item : invoice.getItems()) {
+                item.setInvoiceId(invoiceId);
+                insertInvoiceItem(conn, item);
+                
+                // Scădere stoc (doar dacă factura este emisă)
+                if ("issued".equals(invoice.getStatus())) {
+                    inventoryService.decreaseStock(
+                        conn, 
+                        item.getProductId(), 
+                        item.getQuantity(), 
+                        item.getWarehouseId(),
+                        "FAC", 
+                        invoiceId,
+                        "Factură " + invoice.getFullNumber()
+                    );
+                }
+            }
+            
+            // Recalculează totalele
+            invoice.recalculateTotals();
+            updateInvoiceTotals(conn, invoice);
+            
+            conn.commit();
+            logger.info("Invoice created successfully: {}", invoice.getFullNumber());
+            
+            return invoice;
+            
+        } catch (Exception e) {
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException ex) {
+                    logger.error("Error rolling back transaction", ex);
+                }
+            }
+            logger.error("Error creating invoice", e);
+            throw new Exception("Eroare la crearea facturii: " + e.getMessage(), e);
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                } catch (SQLException e) {
+                    logger.error("Error closing connection", e);
+                }
+            }
+        }
     }
-
+    
+    /**
+     * Emite o factură (schimbă status din draft în issued)
+     */
+    public Invoice issueInvoice(Integer invoiceId, Integer userId) throws Exception {
+        logger.info("Issuing invoice: {}", invoiceId);
+        
+        Connection conn = null;
+        try {
+            conn = databaseService.getConnection();
+            conn.setAutoCommit(false);
+            
+            Invoice invoice = getInvoiceById(conn, invoiceId);
+            if (invoice == null) {
+                throw new Exception("Factura nu a fost găsită");
+            }
+            
+            if (!"draft".equals(invoice.getStatus())) {
+                throw new Exception("Factura nu este în status draft");
+            }
+            
+            // Verifică stocurile disponibile
+            for (InvoiceItem item : invoice.getItems()) {
+                Product product = productService.getProductById(item.getProductId());
+                if (product.getQuantity().compareTo(item.getQuantity()) < 0) {
+                    throw new Exception(String.format(
+                        "Stoc insuficient pentru produsul %s. Disponibil: %s, Necesar: %s",
+                        product.getName(),
+                        product.getQuantity(),
+                        item.getQuantity()
+                    ));
+                }
+            }
+            
+            // Actualizează status
+            invoice.setStatus("issued");
+            invoice.setUpdatedAt(LocalDateTime.now());
+            invoice.setCreatedBy(userId);
+            
+            updateInvoice(conn, invoice);
+            
+            // Scădere stoc
+            for (InvoiceItem item : invoice.getItems()) {
+                inventoryService.decreaseStock(
+                    conn, 
+                    item.getProductId(), 
+                    item.getQuantity(), 
+                    item.getWarehouseId(),
+                    "FAC", 
+                    invoiceId,
+                    "Factură " + invoice.getFullNumber()
+                );
+            }
+            
+            conn.commit();
+            logger.info("Invoice issued successfully: {}", invoice.getFullNumber());
+            
+            return invoice;
+            
+        } catch (Exception e) {
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException ex) {
+                    logger.error("Error rolling back transaction", ex);
+                }
+            }
+            logger.error("Error issuing invoice", e);
+            throw new Exception("Eroare la emiterea facturii: " + e.getMessage(), e);
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                } catch (SQLException e) {
+                    logger.error("Error closing connection", e);
+                }
+            }
+        }
+    }
+    
+    /**
+     * Anulează o factură și restabilește stocurile
+     */
+    public Invoice cancelInvoice(Integer invoiceId, String reason, Integer userId) throws Exception {
+        logger.info("Cancelling invoice: {} - Reason: {}", invoiceId, reason);
+        
+        Connection conn = null;
+        try {
+            conn = databaseService.getConnection();
+            conn.setAutoCommit(false);
+            
+            Invoice invoice = getInvoiceById(conn, invoiceId);
+            if (invoice == null) {
+                throw new Exception("Factura nu a fost găsită");
+            }
+            
+            if ("cancelled".equals(invoice.getStatus())) {
+                throw new Exception("Factura este deja anulată");
+            }
+            
+            if ("paid".equals(invoice.getStatus())) {
+                throw new Exception("Factura plătită nu poate fi anulată");
+            }
+            
+            // Restabilește stocurile dacă factura a fost emisă
+            if ("issued".equals(invoice.getStatus())) {
+                for (InvoiceItem item : invoice.getItems()) {
+                    inventoryService.increaseStock(
+                        conn, 
+                        item.getProductId(), 
+                        item.getQuantity(), 
+                        item.getWarehouseId(),
+                        "FAC", 
+                        invoiceId,
+                        "Anulare factură " + invoice.getFullNumber() + " - " + reason
+                    );
+                }
+            }
+            
+            // Actualizează status
+            invoice.setStatus("cancelled");
+            invoice.setNotes((invoice.getNotes() != null ? invoice.getNotes() + "\n" : "") + 
+                           "ANULAT: " + reason);
+            invoice.setUpdatedAt(LocalDateTime.now());
+            
+            updateInvoice(conn, invoice);
+            
+            conn.commit();
+            logger.info("Invoice cancelled successfully: {}", invoice.getFullNumber());
+            
+            return invoice;
+            
+        } catch (Exception e) {
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException ex) {
+                    logger.error("Error rolling back transaction", ex);
+                }
+            }
+            logger.error("Error cancelling invoice", e);
+            throw new Exception("Eroare la anularea facturii: " + e.getMessage(), e);
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                } catch (SQLException e) {
+                    logger.error("Error closing connection", e);
+                }
+            }
+        }
+    }
+    
     /**
      * Obține toate facturile
      */
-    public List<Invoice> getAllInvoices() {
-        List<Invoice> invoices = new ArrayList<>();
+    public List<Invoice> getAllInvoices() throws Exception {
+        String sql = "SELECT * FROM invoices ORDER BY issue_date DESC, series, number DESC";
         
-        try (Connection conn = databaseService.getConnection()) {
-            String sql = "SELECT * FROM invoices ORDER BY issue_date DESC";
+        try (Connection conn = databaseService.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
             
-            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                ResultSet rs = stmt.executeQuery();
-                while (rs.next()) {
-                    Invoice invoice = mapRowToInvoice(rs);
-                    invoice.setItems(getInvoiceItems(invoice.getId()));
-                    invoices.add(invoice);
-                }
+            List<Invoice> invoices = new ArrayList<>();
+            while (rs.next()) {
+                Invoice invoice = mapResultSetToInvoice(rs);
+                // Încarcă item-urile
+                invoice.setItems(getInvoiceItemsByInvoiceId(invoice.getId()));
+                invoices.add(invoice);
             }
+            
+            return invoices;
+            
         } catch (SQLException e) {
             logger.error("Error getting all invoices", e);
+            throw new Exception("Eroare la obținerea facturilor: " + e.getMessage(), e);
         }
-        
-        return invoices;
     }
-
+    
     /**
-     * Obține o factură după ID
+     * Obține factura după ID
      */
-    public Invoice getInvoiceById(int id) {
+    public Invoice getInvoiceById(Integer invoiceId) throws Exception {
         try (Connection conn = databaseService.getConnection()) {
-            String sql = "SELECT * FROM invoices WHERE id = ?";
+            return getInvoiceById(conn, invoiceId);
+        }
+    }
+    
+    private Invoice getInvoiceById(Connection conn, Integer invoiceId) throws SQLException {
+        String sql = "SELECT * FROM invoices WHERE id = ?";
+        
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, invoiceId);
             
-            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                stmt.setInt(1, id);
-                ResultSet rs = stmt.executeQuery();
+            try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    Invoice invoice = mapRowToInvoice(rs);
-                    invoice.setItems(getInvoiceItems(invoice.getId()));
+                    Invoice invoice = mapResultSetToInvoice(rs);
+                    invoice.setItems(getInvoiceItemsByInvoiceId(invoiceId));
                     return invoice;
                 }
             }
-        } catch (SQLException e) {
-            logger.error("Error getting invoice by ID", e);
         }
         
         return null;
     }
-
+    
     /**
-     * Obține elementele unei facturi
+     * Obține item-urile unei facturi
      */
-    private List<InvoiceItem> getInvoiceItems(int invoiceId) {
-        List<InvoiceItem> items = new ArrayList<>();
+    public List<InvoiceItem> getInvoiceItemsByInvoiceId(Integer invoiceId) throws Exception {
+        String sql = "SELECT * FROM invoice_items WHERE invoice_id = ?";
         
-        try (Connection conn = databaseService.getConnection()) {
-            String sql = "SELECT * FROM invoice_items WHERE invoice_id = ?";
+        try (Connection conn = databaseService.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                stmt.setInt(1, invoiceId);
-                ResultSet rs = stmt.executeQuery();
+            stmt.setInt(1, invoiceId);
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                List<InvoiceItem> items = new ArrayList<>();
                 while (rs.next()) {
-                    items.add(mapRowToInvoiceItem(rs));
+                    InvoiceItem item = mapResultSetToInvoiceItem(rs);
+                    // Încarcă produsul
+                    Product product = productService.getProductById(item.getProductId());
+                    item.setProduct(product);
+                    items.add(item);
                 }
+                return items;
             }
+            
         } catch (SQLException e) {
-            logger.error("Error getting invoice items", e);
+            logger.error("Error getting invoice items for invoice: {}", invoiceId, e);
+            throw new Exception("Eroare la obținerea item-urilor facturii: " + e.getMessage(), e);
+        }
+    }
+    
+    // Metode private pentru operațiuni CRUD
+    
+    private void validateInvoice(Invoice invoice) throws Exception {
+        if (invoice.getPartnerId() == null) {
+            throw new Exception("Partenerul este obligatoriu");
         }
         
-        return items;
-    }
-
-    /**
-     * Obține toate notele de recepție
-     */
-    public List<ReceptionNote> getAllReceptionNotes() {
-        List<ReceptionNote> notes = new ArrayList<>();
-        
-        try (Connection conn = databaseService.getConnection()) {
-            String sql = "SELECT * FROM reception_notes ORDER BY reception_date DESC";
-            
-            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                ResultSet rs = stmt.executeQuery();
-                while (rs.next()) {
-                    ReceptionNote note = mapRowToReceptionNote(rs);
-                    note.setItems(getReceptionNoteItems(note.getId()));
-                    notes.add(note);
-                }
-            }
-        } catch (SQLException e) {
-            logger.error("Error getting all reception notes", e);
+        if (invoice.getItems() == null || invoice.getItems().isEmpty()) {
+            throw new Exception("Factura trebuie să conțină cel puțin un produs");
         }
         
-        return notes;
-    }
-
-    /**
-     * Obține elementele unei note de recepție
-     */
-    private List<ReceptionNoteItem> getReceptionNoteItems(int receptionNoteId) {
-        List<ReceptionNoteItem> items = new ArrayList<>();
-        
-        try (Connection conn = databaseService.getConnection()) {
-            String sql = "SELECT * FROM reception_note_items WHERE reception_note_id = ?";
-            
-            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                stmt.setInt(1, receptionNoteId);
-                ResultSet rs = stmt.executeQuery();
-                while (rs.next()) {
-                    items.add(mapRowToReceptionNoteItem(rs));
-                }
-            }
-        } catch (SQLException e) {
-            logger.error("Error getting reception note items", e);
+        // Verifică partenerul
+        Partner partner = partnerService.getPartnerById(invoice.getPartnerId());
+        if (partner == null) {
+            throw new Exception("Partenerul specificat nu există");
         }
         
-        return items;
+        // Verifică produsele
+        for (InvoiceItem item : invoice.getItems()) {
+            if (item.getProductId() == null) {
+                throw new Exception("Produsul este obligatoriu pentru fiecare item");
+            }
+            
+            if (item.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new Exception("Cantitatea trebuie să fie pozitivă");
+            }
+            
+            if (item.getUnitPrice().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new Exception("Prețul unitar trebuie să fie pozitiv");
+            }
+            
+            Product product = productService.getProductById(item.getProductId());
+            if (product == null) {
+                throw new Exception("Produsul specificat nu există");
+            }
+        }
     }
-
-    // Metode de mapping pentru ResultSet
-    private Invoice mapRowToInvoice(ResultSet rs) throws SQLException {
+    
+    private Integer insertInvoice(Connection conn, Invoice invoice) throws SQLException {
+        String sql = "INSERT INTO invoices (series, number, partner_id, issue_date, due_date, " +
+                    "payment_method_id, total_amount, total_vat, total_with_vat, status, notes, " +
+                    "is_e_factura, e_factura_status, e_factura_xml, created_by, created_at, updated_at) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        
+        try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            stmt.setString(1, invoice.getSeries());
+            stmt.setInt(2, invoice.getNumber());
+            stmt.setInt(3, invoice.getPartnerId());
+            stmt.setDate(4, Date.valueOf(invoice.getIssueDate()));
+            stmt.setDate(5, Date.valueOf(invoice.getDueDate()));
+            
+            if (invoice.getPaymentMethodId() != null) {
+                stmt.setInt(6, invoice.getPaymentMethodId());
+            } else {
+                stmt.setNull(6, Types.INTEGER);
+            }
+            
+            stmt.setBigDecimal(7, invoice.getTotalAmount());
+            stmt.setBigDecimal(8, invoice.getTotalVat());
+            stmt.setBigDecimal(9, invoice.getTotalWithVat());
+            stmt.setString(10, invoice.getStatus());
+            stmt.setString(11, invoice.getNotes());
+            stmt.setBoolean(12, invoice.getIsEFactura());
+            stmt.setString(13, invoice.getEFacturaStatus());
+            stmt.setString(14, invoice.getEFacturaXml());
+            stmt.setInt(15, invoice.getCreatedBy());
+            stmt.setTimestamp(16, Timestamp.valueOf(invoice.getCreatedAt()));
+            stmt.setTimestamp(17, Timestamp.valueOf(invoice.getUpdatedAt()));
+            
+            stmt.executeUpdate();
+            
+            try (ResultSet rs = stmt.getGeneratedKeys()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        }
+        
+        throw new SQLException("Failed to insert invoice, no ID obtained.");
+    }
+    
+    private void insertInvoiceItem(Connection conn, InvoiceItem item) throws SQLException {
+        String sql = "INSERT INTO invoice_items (invoice_id, product_id, quantity, unit, " +
+                    "unit_price, discount_percent, vat_rate, total_amount, total_vat, total_with_vat, " +
+                    "warehouse_id, batch_number, expiry_date, created_at) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, item.getInvoiceId());
+            stmt.setInt(2, item.getProductId());
+            stmt.setBigDecimal(3, item.getQuantity());
+            stmt.setString(4, item.getUnit());
+            stmt.setBigDecimal(5, item.getUnitPrice());
+            stmt.setBigDecimal(6, item.getDiscountPercent());
+            stmt.setBigDecimal(7, item.getVatRate());
+            stmt.setBigDecimal(8, item.getTotalAmount());
+            stmt.setBigDecimal(9, item.getTotalVat());
+            stmt.setBigDecimal(10, item.getTotalWithVat());
+            stmt.setInt(11, item.getWarehouseId());
+            stmt.setString(12, item.getBatchNumber());
+            
+            if (item.getExpiryDate() != null) {
+                stmt.setDate(13, Date.valueOf(item.getExpiryDate()));
+            } else {
+                stmt.setNull(13, Types.DATE);
+            }
+            
+            stmt.setTimestamp(14, Timestamp.valueOf(item.getCreatedAt()));
+            
+            stmt.executeUpdate();
+        }
+    }
+    
+    private void updateInvoice(Connection conn, Invoice invoice) throws SQLException {
+        String sql = "UPDATE invoices SET status = ?, notes = ?, updated_at = ? WHERE id = ?";
+        
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, invoice.getStatus());
+            stmt.setString(2, invoice.getNotes());
+            stmt.setTimestamp(3, Timestamp.valueOf(invoice.getUpdatedAt()));
+            stmt.setInt(4, invoice.getId());
+            
+            stmt.executeUpdate();
+        }
+    }
+    
+    private void updateInvoiceTotals(Connection conn, Invoice invoice) throws SQLException {
+        String sql = "UPDATE invoices SET total_amount = ?, total_vat = ?, total_with_vat = ? WHERE id = ?";
+        
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setBigDecimal(1, invoice.getTotalAmount());
+            stmt.setBigDecimal(2, invoice.getTotalVat());
+            stmt.setBigDecimal(3, invoice.getTotalWithVat());
+            stmt.setInt(4, invoice.getId());
+            
+            stmt.executeUpdate();
+        }
+    }
+    
+    private String getNextSeries(Connection conn, char documentType) throws SQLException {
+        String sql = "SELECT prefix FROM document_series WHERE type = ? AND year = ? LIMIT 1";
+        
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, String.valueOf(documentType));
+            stmt.setInt(2, LocalDate.now().getYear());
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("prefix");
+                }
+            }
+        }
+        
+        // Default series if not found
+        return String.valueOf(documentType) + "AC";
+    }
+    
+    private Integer getNextNumber(Connection conn, String series, int year) throws SQLException {
+        String sql = "SELECT COALESCE(MAX(number), 0) + 1 as next_number " +
+                    "FROM invoices WHERE series = ? AND issue_date >= ? AND issue_date <= ?";
+        
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, series);
+            stmt.setDate(2, Date.valueOf(LocalDate.of(year, 1, 1)));
+            stmt.setDate(3, Date.valueOf(LocalDate.of(year, 12, 31)));
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("next_number");
+                }
+            }
+        }
+        
+        return 1;
+    }
+    
+    private Invoice mapResultSetToInvoice(ResultSet rs) throws SQLException {
         Invoice invoice = new Invoice();
         invoice.setId(rs.getInt("id"));
-        invoice.setInvoiceNumber(rs.getString("invoice_number"));
         invoice.setSeries(rs.getString("series"));
-        invoice.setIssueDate(rs.getDate("issue_date") != null ? rs.getDate("issue_date").toLocalDate() : null);
-        invoice.setDueDate(rs.getDate("due_date") != null ? rs.getDate("due_date").toLocalDate() : null);
-        invoice.setSupplierName(rs.getString("supplier_name"));
-        invoice.setSupplierCif(rs.getString("supplier_cif"));
-        invoice.setSupplierAddress(rs.getString("supplier_address"));
-        invoice.setTotalAmount(rs.getDouble("total_amount"));
-        invoice.setVatAmount(rs.getDouble("vat_amount"));
-        invoice.setCurrency(rs.getString("currency"));
+        invoice.setNumber(rs.getInt("number"));
+        invoice.setPartnerId(rs.getInt("partner_id"));
+        invoice.setIssueDate(rs.getDate("issue_date").toLocalDate());
+        invoice.setDueDate(rs.getDate("due_date").toLocalDate());
+        
+        int paymentMethodId = rs.getInt("payment_method_id");
+        if (!rs.wasNull()) {
+            invoice.setPaymentMethodId(paymentMethodId);
+        }
+        
+        invoice.setTotalAmount(rs.getBigDecimal("total_amount"));
+        invoice.setTotalVat(rs.getBigDecimal("total_vat"));
+        invoice.setTotalWithVat(rs.getBigDecimal("total_with_vat"));
         invoice.setStatus(rs.getString("status"));
-        invoice.setCreatedAt(rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toLocalDateTime() : null);
-        invoice.setUpdatedAt(rs.getTimestamp("updated_at") != null ? rs.getTimestamp("updated_at").toLocalDateTime() : null);
-        invoice.setXmlContent(rs.getString("xml_content"));
-        invoice.setPdfPath(rs.getString("pdf_path"));
+        invoice.setNotes(rs.getString("notes"));
+        invoice.setIsEFactura(rs.getBoolean("is_e_factura"));
+        invoice.setEFacturaStatus(rs.getString("e_factura_status"));
+        invoice.setEFacturaXml(rs.getString("e_factura_xml"));
+        invoice.setCreatedBy(rs.getInt("created_by"));
+        invoice.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+        invoice.setUpdatedAt(rs.getTimestamp("updated_at").toLocalDateTime());
+        
         return invoice;
     }
-
-    private InvoiceItem mapRowToInvoiceItem(ResultSet rs) throws SQLException {
+    
+    private InvoiceItem mapResultSetToInvoiceItem(ResultSet rs) throws SQLException {
         InvoiceItem item = new InvoiceItem();
         item.setId(rs.getInt("id"));
         item.setInvoiceId(rs.getInt("invoice_id"));
-        item.setProductName(rs.getString("product_name"));
-        item.setProductCode(rs.getString("product_code"));
-        item.setDescription(rs.getString("description"));
-        item.setQuantity(rs.getDouble("quantity"));
-        item.setUnitOfMeasure(rs.getString("unit_of_measure"));
-        item.setUnitPrice(rs.getDouble("unit_price"));
-        item.setTotalPrice(rs.getDouble("total_price"));
-        item.setVatRate(rs.getDouble("vat_rate"));
-        item.setVatAmount(rs.getDouble("vat_amount"));
-        item.setCategory(rs.getString("category"));
-        return item;
-    }
-
-    private ReceptionNote mapRowToReceptionNote(ResultSet rs) throws SQLException {
-        ReceptionNote note = new ReceptionNote();
-        note.setId(rs.getInt("id"));
-        note.setNoteNumber(rs.getString("note_number"));
-        note.setSeries(rs.getString("series"));
-        note.setReceptionDate(rs.getDate("reception_date") != null ? rs.getDate("reception_date").toLocalDate() : null);
-        note.setInvoiceDate(rs.getDate("invoice_date") != null ? rs.getDate("invoice_date").toLocalDate() : null);
-        note.setInvoiceNumber(rs.getString("invoice_number"));
-        note.setSupplierName(rs.getString("supplier_name"));
-        note.setSupplierCif(rs.getString("supplier_cif"));
-        note.setSupplierAddress(rs.getString("supplier_address"));
-        note.setTotalAmount(rs.getDouble("total_amount"));
-        note.setVatAmount(rs.getDouble("vat_amount"));
-        note.setCurrency(rs.getString("currency"));
-        note.setStatus(rs.getString("status"));
-        note.setCreatedAt(rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toLocalDateTime() : null);
-        note.setUpdatedAt(rs.getTimestamp("updated_at") != null ? rs.getTimestamp("updated_at").toLocalDateTime() : null);
-        note.setInvoiceId(rs.getInt("invoice_id"));
-        note.setCreatedBy(rs.getString("created_by"));
-        note.setNotes(rs.getString("notes"));
-        return note;
-    }
-
-    private ReceptionNoteItem mapRowToReceptionNoteItem(ResultSet rs) throws SQLException {
-        ReceptionNoteItem item = new ReceptionNoteItem();
-        item.setId(rs.getInt("id"));
-        item.setReceptionNoteId(rs.getInt("reception_note_id"));
-        item.setProductName(rs.getString("product_name"));
-        item.setProductCode(rs.getString("product_code"));
-        item.setDescription(rs.getString("description"));
-        item.setQuantity(rs.getDouble("quantity"));
-        item.setUnitOfMeasure(rs.getString("unit_of_measure"));
-        item.setUnitPrice(rs.getDouble("unit_price"));
-        item.setTotalPrice(rs.getDouble("total_price"));
-        item.setVatRate(rs.getDouble("vat_rate"));
-        item.setVatAmount(rs.getDouble("vat_amount"));
-        item.setCategory(rs.getString("category"));
-        item.setReceivedQuantity(rs.getDouble("received_quantity"));
+        item.setProductId(rs.getInt("product_id"));
+        item.setQuantity(rs.getBigDecimal("quantity"));
+        item.setUnit(rs.getString("unit"));
+        item.setUnitPrice(rs.getBigDecimal("unit_price"));
+        item.setDiscountPercent(rs.getBigDecimal("discount_percent"));
+        item.setVatRate(rs.getBigDecimal("vat_rate"));
+        item.setTotalAmount(rs.getBigDecimal("total_amount"));
+        item.setTotalVat(rs.getBigDecimal("total_vat"));
+        item.setTotalWithVat(rs.getBigDecimal("total_with_vat"));
+        item.setWarehouseId(rs.getInt("warehouse_id"));
         item.setBatchNumber(rs.getString("batch_number"));
-        item.setExpiryDate(rs.getDate("expiry_date") != null ? rs.getDate("expiry_date").toLocalDate() : null);
-        item.setStorageLocation(rs.getString("storage_location"));
+        
+        Date expiryDate = rs.getDate("expiry_date");
+        if (expiryDate != null) {
+            item.setExpiryDate(expiryDate.toLocalDate());
+        }
+        
+        item.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+        
         return item;
     }
 }

@@ -15,6 +15,10 @@ public class Product {
     private String category; // Keep for backward compatibility
     private Integer categoryId; // New field for foreign key relationship
     private String imagePath; // Cale către imaginea produsului
+    private String code;
+    private String unit;
+    private Double vatRate;
+    private BigDecimal purchasePrice;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -68,6 +72,38 @@ public class Product {
 
     public void setPrice(BigDecimal price) {
         this.price = price;
+    }
+    
+    public String getUnit() {
+        return unit != null ? unit : "buc";
+    }
+    
+    public void setUnit(String unit) {
+        this.unit = unit;
+    }
+    
+    public double getVatRate() {
+        return vatRate != null ? vatRate : 19.0;
+    }
+    
+    public void setVatRate(double vatRate) {
+        this.vatRate = vatRate;
+    }
+    
+    public String getCode() {
+        return code;
+    }
+    
+    public void setCode(String code) {
+        this.code = code;
+    }
+    
+    public BigDecimal getPurchasePrice() {
+        return purchasePrice != null ? purchasePrice : BigDecimal.ZERO;
+    }
+    
+    public void setPurchasePrice(BigDecimal purchasePrice) {
+        this.purchasePrice = purchasePrice;
     }
 
     public int getQuantity() {

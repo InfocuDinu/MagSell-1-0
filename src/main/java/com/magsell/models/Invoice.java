@@ -1,208 +1,380 @@
 package com.magsell.models;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
 
 /**
- * Model pentru facturi importate din SPV
+ * Model pentru Factură Fiscală
+ * Respectă standardul SmartBill și legislația fiscală română
  */
 public class Invoice {
-    private int id;
-    private String invoiceNumber;
+    private Integer id;
     private String series;
+    private Integer number;
+    private Integer partnerId;
+    private Partner partner;
     private LocalDate issueDate;
     private LocalDate dueDate;
-    private String supplierName;
-    private String supplierCif;
-    private String supplierAddress;
-    private double totalAmount;
-    private double vatAmount;
-    private String currency;
-    private String status; // 'imported', 'processed', 'rejected'
+    private Integer paymentMethodId;
+    private String paymentMethodName;
+    private BigDecimal totalAmount;
+    private BigDecimal totalVat;
+    private BigDecimal totalWithVat;
+    private String status; // draft, issued, paid, cancelled
+    private String notes;
+    private Boolean isEFactura;
+    private String eFacturaStatus; // pending, submitted, accepted, rejected
+    private String eFacturaXml;
+    private Integer createdBy;
+    private User createdByUser;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private List<InvoiceItem> items;
-    private String xmlContent; // Conținutul XML original din SPV
-    private String pdfPath; // Calea către fișierul PDF descărcat
-
+    
+    // Relations
+    private List<InvoiceItem> items = new ArrayList<>();
+    
     public Invoice() {
+        this.issueDate = LocalDate.now();
+        this.dueDate = LocalDate.now().plusDays(30);
+        this.totalAmount = BigDecimal.ZERO;
+        this.totalVat = BigDecimal.ZERO;
+        this.totalWithVat = BigDecimal.ZERO;
+        this.status = "draft";
+        this.isEFactura = false;
+        this.eFacturaStatus = null;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
-        this.status = "imported";
-        this.currency = "RON";
     }
-
+    
+    // Constructors
+    public Invoice(String series, Integer number, Integer partnerId) {
+        this();
+        this.series = series;
+        this.number = number;
+        this.partnerId = partnerId;
+    }
+    
+    // Business logic methods
+    public void addItem(InvoiceItem item) {
+        item.setInvoiceId(this.id);
+        items.add(item);
+        recalculateTotals();
+    }
+    
+    public void removeItem(InvoiceItem item) {
+        items.remove(item);
+        recalculateTotals();
+    }
+    
+    public void recalculateTotals() {
+        this.totalAmount = BigDecimal.ZERO;
+        this.totalVat = BigDecimal.ZERO;
+        this.totalWithVat = BigDecimal.ZERO;
+        
+        for (InvoiceItem item : items) {
+            this.totalAmount = this.totalAmount.add(item.getTotalAmount());
+            this.totalVat = this.totalVat.add(item.getTotalVat());
+            this.totalWithVat = this.totalWithVat.add(item.getTotalWithVat());
+        }
+    }
+    
+    public boolean isDraft() {
+        return "draft".equals(status);
+    }
+    
+    public boolean isIssued() {
+        return "issued".equals(status);
+    }
+    
+    public boolean isPaid() {
+        return "paid".equals(status);
+    }
+    
+    public boolean isCancelled() {
+        return "cancelled".equals(status);
+    }
+    
+    public String getFullNumber() {
+        return series + " " + String.format("%06d", number);
+    }
+    
+    // Legacy methods for backward compatibility
+    public String getFullInvoiceNumber() {
+        return getFullNumber();
+    }
+    
+    public String getInvoiceNumber() {
+        return getFullNumber();
+    }
+    
+    public String getSupplierName() {
+        return partner != null ? partner.getName() : "";
+    }
+    
+    public String getSupplierCif() {
+        return partner != null ? partner.getCui() : "";
+    }
+    
+    public String getSupplierAddress() {
+        return partner != null ? partner.getAddress() : "";
+    }
+    
+    public double getVatAmount() {
+        return totalVat != null ? totalVat.doubleValue() : 0.0;
+    }
+    
+    public String getCurrency() {
+        return "RON";
+    }
+    
+    public String getXmlContent() {
+        return eFacturaXml;
+    }
+    
+    public String getPdfPath() {
+        return null; // Can be implemented later
+    }
+    
+    // Legacy setters for backward compatibility
+    public void setInvoiceNumber(String invoiceNumber) {
+        // Parse from format "SERIE 000001"
+        if (invoiceNumber != null && invoiceNumber.contains(" ")) {
+            String[] parts = invoiceNumber.split(" ", 2);
+            if (parts.length == 2) {
+                this.series = parts[0];
+                try {
+                    this.number = Integer.parseInt(parts[1].trim());
+                } catch (NumberFormatException e) {
+                    // Keep existing number
+                }
+            }
+        }
+    }
+    
+    public void setSupplierName(String supplierName) {
+        // This would require finding/creating partner - simplified for now
+    }
+    
+    public void setSupplierCif(String supplierCif) {
+        // This would require finding/creating partner - simplified for now
+    }
+    
+    public void setSupplierAddress(String supplierAddress) {
+        // This would require finding/creating partner - simplified for now
+    }
+    
+    public void setVatAmount(double vatAmount) {
+        this.totalVat = new BigDecimal(vatAmount);
+    }
+    
+    public void setCurrency(String currency) {
+        // RON is default, ignore other values
+    }
+    
+    public void setXmlContent(String xmlContent) {
+        this.eFacturaXml = xmlContent;
+    }
+    
+    public void setPdfPath(String pdfPath) {
+        // Can be implemented later
+    }
+    
     // Getters and Setters
-    public int getId() {
+    public Integer getId() {
         return id;
     }
-
-    public void setId(int id) {
+    
+    public void setId(Integer id) {
         this.id = id;
     }
-
-    public String getInvoiceNumber() {
-        return invoiceNumber;
-    }
-
-    public void setInvoiceNumber(String invoiceNumber) {
-        this.invoiceNumber = invoiceNumber;
-    }
-
+    
     public String getSeries() {
         return series;
     }
-
+    
     public void setSeries(String series) {
         this.series = series;
     }
-
+    
+    public Integer getNumber() {
+        return number;
+    }
+    
+    public void setNumber(Integer number) {
+        this.number = number;
+    }
+    
+    public Integer getPartnerId() {
+        return partnerId;
+    }
+    
+    public void setPartnerId(Integer partnerId) {
+        this.partnerId = partnerId;
+    }
+    
+    public Partner getPartner() {
+        return partner;
+    }
+    
+    public void setPartner(Partner partner) {
+        this.partner = partner;
+        if (partner != null) {
+            this.partnerId = partner.getId();
+        }
+    }
+    
     public LocalDate getIssueDate() {
         return issueDate;
     }
-
+    
     public void setIssueDate(LocalDate issueDate) {
         this.issueDate = issueDate;
     }
-
+    
     public LocalDate getDueDate() {
         return dueDate;
     }
-
+    
     public void setDueDate(LocalDate dueDate) {
         this.dueDate = dueDate;
     }
-
-    public String getSupplierName() {
-        return supplierName;
+    
+    public Integer getPaymentMethodId() {
+        return paymentMethodId;
     }
-
-    public void setSupplierName(String supplierName) {
-        this.supplierName = supplierName;
+    
+    public void setPaymentMethodId(Integer paymentMethodId) {
+        this.paymentMethodId = paymentMethodId;
     }
-
-    public String getSupplierCif() {
-        return supplierCif;
+    
+    public String getPaymentMethodName() {
+        return paymentMethodName;
     }
-
-    public void setSupplierCif(String supplierCif) {
-        this.supplierCif = supplierCif;
+    
+    public void setPaymentMethodName(String paymentMethodName) {
+        this.paymentMethodName = paymentMethodName;
     }
-
-    public String getSupplierAddress() {
-        return supplierAddress;
-    }
-
-    public void setSupplierAddress(String supplierAddress) {
-        this.supplierAddress = supplierAddress;
-    }
-
-    public double getTotalAmount() {
+    
+    public BigDecimal getTotalAmount() {
         return totalAmount;
     }
-
-    public void setTotalAmount(double totalAmount) {
+    
+    public void setTotalAmount(BigDecimal totalAmount) {
         this.totalAmount = totalAmount;
     }
-
-    public double getVatAmount() {
-        return vatAmount;
+    
+    public BigDecimal getTotalVat() {
+        return totalVat;
     }
-
-    public void setVatAmount(double vatAmount) {
-        this.vatAmount = vatAmount;
+    
+    public void setTotalVat(BigDecimal totalVat) {
+        this.totalVat = totalVat;
     }
-
-    public String getCurrency() {
-        return currency;
+    
+    public BigDecimal getTotalWithVat() {
+        return totalWithVat;
     }
-
-    public void setCurrency(String currency) {
-        this.currency = currency;
+    
+    public void setTotalWithVat(BigDecimal totalWithVat) {
+        this.totalWithVat = totalWithVat;
     }
-
+    
     public String getStatus() {
         return status;
     }
-
+    
     public void setStatus(String status) {
         this.status = status;
     }
-
+    
+    public String getNotes() {
+        return notes;
+    }
+    
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+    
+    public Boolean getIsEFactura() {
+        return isEFactura;
+    }
+    
+    public void setIsEFactura(Boolean isEFactura) {
+        this.isEFactura = isEFactura;
+    }
+    
+    public String getEFacturaStatus() {
+        return eFacturaStatus;
+    }
+    
+    public void setEFacturaStatus(String eFacturaStatus) {
+        this.eFacturaStatus = eFacturaStatus;
+    }
+    
+    public String getEFacturaXml() {
+        return eFacturaXml;
+    }
+    
+    public void setEFacturaXml(String eFacturaXml) {
+        this.eFacturaXml = eFacturaXml;
+    }
+    
+    public Integer getCreatedBy() {
+        return createdBy;
+    }
+    
+    public void setCreatedBy(Integer createdBy) {
+        this.createdBy = createdBy;
+    }
+    
+    public User getCreatedByUser() {
+        return createdByUser;
+    }
+    
+    public void setCreatedByUser(User createdByUser) {
+        this.createdByUser = createdByUser;
+        if (createdByUser != null) {
+            this.createdBy = createdByUser.getId();
+        }
+    }
+    
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
-
+    
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
-
+    
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
-
+    
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
-
+    
     public List<InvoiceItem> getItems() {
         return items;
     }
-
+    
     public void setItems(List<InvoiceItem> items) {
         this.items = items;
+        recalculateTotals();
     }
-
-    public String getXmlContent() {
-        return xmlContent;
-    }
-
-    public void setXmlContent(String xmlContent) {
-        this.xmlContent = xmlContent;
-    }
-
-    public String getPdfPath() {
-        return pdfPath;
-    }
-
-    public void setPdfPath(String pdfPath) {
-        this.pdfPath = pdfPath;
-    }
-
-    /**
-     * Returnează numărul complet al facturii (serie + număr)
-     */
-    public String getFullInvoiceNumber() {
-        if (series != null && !series.isEmpty()) {
-            return series + " " + invoiceNumber;
-        }
-        return invoiceNumber;
-    }
-
-    /**
-     * Verifică dacă factura are TVA
-     */
-    public boolean hasVat() {
-        return vatAmount > 0;
-    }
-
-    /**
-     * Returnează suma fără TVA
-     */
-    public double getAmountWithoutVat() {
-        return totalAmount - vatAmount;
-    }
-
+    
     @Override
     public String toString() {
         return "Invoice{" +
                 "id=" + id +
-                ", invoiceNumber='" + invoiceNumber + '\'' +
                 ", series='" + series + '\'' +
+                ", number=" + number +
+                ", partnerId=" + partnerId +
                 ", issueDate=" + issueDate +
-                ", supplierName='" + supplierName + '\'' +
-                ", totalAmount=" + totalAmount +
+                ", totalWithVat=" + totalWithVat +
                 ", status='" + status + '\'' +
                 '}';
     }

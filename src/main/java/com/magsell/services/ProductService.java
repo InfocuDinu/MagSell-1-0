@@ -83,6 +83,26 @@ public class ProductService {
         }
         return null;
     }
+    
+    /**
+     * Găsește un produs după cod
+     */
+    public Product getProductByCode(String code) throws Exception {
+        String sql = "SELECT * FROM products WHERE code = ?";
+        
+        try (Connection conn = dbService.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, code);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapRowToProduct(rs);
+                }
+            }
+        }
+        return null;
+    }
 
     /**
      * Actualizează un produs.
