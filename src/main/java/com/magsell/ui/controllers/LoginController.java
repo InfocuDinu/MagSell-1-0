@@ -59,29 +59,15 @@ public class LoginController {
     
     private void openMainWindow() {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/magsell/ui/fxml/MainWindow.fxml"));
-            Scene scene = new Scene(loader.load(), 1200, 800);
+            // Închide fereastra de login
+            Stage loginStage = (Stage) usernameField.getScene().getWindow();
+            loginStage.close();
             
-            // Încărcare stiluri CSS
-            String css = getClass().getResource("/com/magsell/ui/css/styles.css").toExternalForm();
-            scene.getStylesheets().add(css);
+            // Deschide noul layout principal modern
+            App.openMainWindow();
             
-            Stage mainStage = new Stage();
-            mainStage.setTitle("MagSell - Gestionare Patiserie");
-            mainStage.setScene(scene);
-            mainStage.setOnCloseRequest(e -> {
-                try {
-                    com.magsell.database.DatabaseService.getInstance().close();
-                    logger.info("Aplicație închisă normal");
-                } catch (Exception ex) {
-                    logger.error("Eroare la închiderea bazei de date", ex);
-                }
-                System.exit(0);
-            });
-            mainStage.show();
-            
-        } catch (IOException e) {
-            logger.error("Eroare la încărcarea ferestrei principale", e);
+        } catch (Exception e) {
+            logger.error("Eroare la deschiderea ferestrei principale", e);
             showAlert(Alert.AlertType.ERROR, "Eroare", "Nu s-a putut încărca fereastra principală!");
         }
     }

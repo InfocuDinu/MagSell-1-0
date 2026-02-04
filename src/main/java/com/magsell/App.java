@@ -61,18 +61,18 @@ public class App extends Application {
         }
     }
 
-    private void showErrorAndExit(String message) {
-        System.err.println(message);
-        System.exit(1);
-    }
-
-    private void shutdown() {
+    private static void shutdown() {
         try {
             DatabaseService.getInstance().close();
             logger.info("Aplicație închisă normal");
         } catch (Exception e) {
             logger.error("Eroare la închiderea bazei de date", e);
         }
+    }
+    
+    private static void showErrorAndExit(String message) {
+        System.err.println(message);
+        System.exit(1);
     }
 
     public static User getCurrentUser() {
@@ -81,6 +81,33 @@ public class App extends Application {
 
     public static void setCurrentUser(User user) {
         currentUser = user;
+    }
+    
+    /**
+     * Deschide fereastra principală cu noul layout modern
+     */
+    public static void openMainWindow() {
+        try {
+            FXMLLoader loader = new FXMLLoader(App.class.getResource("/com/magsell/ui/fxml/MainLayout.fxml"));
+            Scene scene = new Scene(loader.load(), 1400, 900);
+
+            // Încărcare stiluri CSS
+            String css = App.class.getResource("/com/magsell/ui/styles/main-styles.css").toExternalForm();
+            scene.getStylesheets().add(css);
+
+            Stage stage = new Stage();
+            stage.setTitle(APP_TITLE + " - ERP");
+            stage.setScene(scene);
+            stage.setMinWidth(1200);
+            stage.setMinHeight(700);
+            stage.setOnCloseRequest(e -> shutdown());
+            stage.show();
+
+            logger.info("Fereastra principală afișată cu succes");
+        } catch (IOException e) {
+            logger.error("Eroare la încărcarea ferestrei principale", e);
+            showErrorAndExit("Eroare la încărcarea interfeței principale");
+        }
     }
 
     public static void main(String[] args) {

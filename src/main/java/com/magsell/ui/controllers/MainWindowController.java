@@ -267,6 +267,94 @@ public class MainWindowController {
     }
 
     @FXML
+    private void handleInvoiceManagement() {
+        try {
+            logger.info("Opening Invoice Management module");
+            
+            com.magsell.models.User currentUser = App.getCurrentUser();
+            if (currentUser == null || !currentUser.canManageSales()) {
+                logger.warn("User does not have permission to manage invoices");
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Acces interzis");
+                alert.setHeaderText("Permisiuni insuficiente");
+                alert.setContentText("Nu aveți permisiunea de a gestiona facturi.");
+                alert.showAndWait();
+                return;
+            }
+
+            logger.info("Loading InvoiceManagement.fxml");
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
+                    getClass().getResource("/com/magsell/ui/fxml/InvoiceManagement.fxml"));
+            
+            logger.info("Loading FXML content");
+            javafx.scene.Parent root = loader.load();
+            logger.info("FXML loaded successfully");
+
+            logger.info("Creating stage and scene");
+            javafx.stage.Stage stage = new javafx.stage.Stage();
+            stage.setTitle("Management Facturi și Note Recepție SPV");
+            stage.setScene(new javafx.scene.Scene(root, 1200, 800));
+            
+            logger.info("Showing invoice management stage");
+            stage.showAndWait();
+            logger.info("Invoice management stage closed");
+
+        } catch (Exception e) {
+            logger.error("Eroare la deschiderea managerului de facturi", e);
+            e.printStackTrace();
+            Alert alert = new Alert(AlertType.ERROR);
+            alert.setTitle("Eroare");
+            alert.setHeaderText("Nu s-a putut deschide managerul de facturi");
+            alert.setContentText("A apărut o eroare: " + e.getMessage());
+            alert.showAndWait();
+        }
+    }
+
+    @FXML
+    private void handleProductionManagement() {
+        try {
+            logger.info("Opening Production Management module");
+            
+            com.magsell.models.User currentUser = App.getCurrentUser();
+            if (currentUser == null || !currentUser.canManageSales()) {
+                logger.warn("User does not have permission to manage production");
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Acces interzis");
+                alert.setHeaderText("Permisiuni insuficiente");
+                alert.setContentText("Nu aveți permisiunea de a gestiona producția.");
+                alert.showAndWait();
+                return;
+            }
+
+            logger.info("Loading ProductionView.fxml");
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
+                    getClass().getResource("/com/magsell/ui/fxml/ProductionView.fxml"));
+            
+            logger.info("Loading FXML content");
+            javafx.scene.Parent root = loader.load();
+            logger.info("FXML loaded successfully");
+
+            logger.info("Creating stage and scene");
+            javafx.stage.Stage stage = new javafx.stage.Stage();
+            stage.setTitle("Management Producție");
+            stage.setScene(new javafx.scene.Scene(root, 1200, 800));
+            
+            logger.info("Showing production management stage");
+            stage.showAndWait();
+            logger.info("Production management stage closed");
+
+        } catch (Exception e) {
+            logger.error("Eroare la deschiderea managerului de producție", e);
+            e.printStackTrace();
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Eroare");
+            alert.setHeaderText("Nu s-a putut deschide managerul de producție");
+            alert.setContentText("A apărut o eroare: " + e.getMessage());
+            alert.showAndWait();
+        }
+    }
+
+    @FXML
     private void handleExportPDF() {
         try {
             Dialog<LocalDate[]> dialog = createDateRangeDialog("Export PDF");

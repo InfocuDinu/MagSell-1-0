@@ -23,6 +23,12 @@
             <Menu text="Vânzări">
                 <MenuItem text="Vezi vânzări" onAction="#handleViewSales"/>
             </Menu>
+            <Menu text="Facturi">
+                <MenuItem text="Management Facturi SPV" onAction="#handleInvoiceManagement"/>
+            </Menu>
+            <Menu text="Producție">
+                <MenuItem text="Management Producție" onAction="#handleProductionManagement"/>
+            </Menu>
             <Menu text="Utilizatori">
                 <MenuItem text="Gestionare utilizatori" onAction="#handleManageUsers"/>
                 <MenuItem text="Permisiuni utilizatori" onAction="#handleUserPermissions"/>
