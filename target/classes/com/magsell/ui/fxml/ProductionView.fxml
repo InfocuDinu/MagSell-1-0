@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.magsell.ui.controllers.ProductionController">
+    <top>
+        <VBox spacing="10" style="-fx-padding: 10;">
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label text="Management Producție" style="-fx-font-size: 18; -fx-font-weight: bold;"/>
+                <Separator HBox.hgrow="ALWAYS" orientation="HORIZONTAL"/>
+                <Button fx:id="addRecipeButton" text="➕️ Adaugă Rețetă" style="-fx-padding: 8;"/>
+                <Button fx:id="createOrderButton" text="📋 Creează Comandă" style="-fx-padding: 8;"/>
+                <Button fx:id="refreshButton" text="🔄 Reîncarcă" style="-fx-padding: 8;"/>
+            </HBox>
+        </VBox>
+    </top>
+
+    <center>
+        <TabPane>
+            <Tab text="Rețete" closable="false">
+                <VBox spacing="10" style="-fx-padding: 10;">
+                    <TableView fx:id="recipesTableView" prefHeight="300">
+                        <columns>
+                            <TableColumn fx:id="recipeIdColumn" text="ID" prefWidth="50"/>
+                            <TableColumn fx:id="recipeNameColumn" text="Produs Finisat" prefWidth="200"/>
+                            <TableColumn fx:id="recipeIngredientsColumn" text="Ingrediente" prefWidth="300"/>
+                            <TableColumn fx:id="recipeCreatedByColumn" text="Creat de" prefWidth="100"/>
+                            <TableColumn fx:id="recipeCreatedAtColumn" text="Creat la" prefWidth="120"/>
+                        </columns>
+                    </TableView>
+                    
+                    <HBox spacing="10">
+                        <Button fx:id="viewRecipeButton" text="👁️ Vizualizează" disable="true"/>
+                        <Button fx:id="editRecipeButton" text="✏️ Editează" disable="true"/>
+                        <Button fx:id="deleteRecipeButton" text="🗑️ Șterge" disable="true"/>
+                    </HBox>
+                </VBox>
+            </Tab>
+            
+            <Tab text="Comenzi Producție" closable="false">
+                <VBox spacing="10" style="-fx-padding: 10;">
+                    <TableView fx:id="ordersTableView" prefHeight="300">
+                        <columns>
+                            <TableColumn fx:id="orderIdColumn" text="ID" prefWidth="50"/>
+                            <TableColumn fx:id="orderRecipeColumn" text="Rețetă" prefWidth="150"/>
+                            <TableColumn fx:id="orderQuantityColumn" text="Cantitate" prefWidth="100"/>
+                            <TableColumn fx:id="orderStatusColumn" text="Status" prefWidth="100"/>
+                            <TableColumn fx:id="orderCreatedByColumn" text="Creat de" prefWidth="100"/>
+                            <TableColumn fx:id="orderCreatedAtColumn" text="Creat la" prefWidth="120"/>
+                        </columns>
+                    </TableView>
+                    
+                    <HBox spacing="10">
+                        <Button fx:id="processOrderButton" text="⚙️ Procesează" disable="true"/>
+                        <Button fx:id="viewOrderButton" text="👁️ Vizualizează" disable="true"/>
+                        <Button fx:id="cancelOrderButton" text="❌ Anulează" disable="true"/>
+                    </HBox>
+                </VBox>
+            </Tab>
+        </TabPane>
+    </center>
+</BorderPane>

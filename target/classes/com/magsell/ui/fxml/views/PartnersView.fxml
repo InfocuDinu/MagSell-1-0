@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import com.jfoenix.controls.*?>
+<?import io.github.palexdev.materialfx.controls.*?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.magsell.ui.controllers.PartnersViewController"
+      spacing="20" styleClass="module-container">
+    
+    <!-- Header -->
+    <HBox styleClass="module-header" alignment="CENTER_LEFT">
+        <Label text="👥 Management Parteneri" styleClass="module-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        
+        <JFXButton text="➕ Adaugă Partener" styleClass="primary-button" onAction="#addPartner"/>
+        <JFXButton text="🔄 Reîncarcă" styleClass="secondary-button" onAction="#refreshPartners"/>
+    </HBox>
+    
+    <!-- Search and Filter -->
+    <HBox spacing="15" alignment="CENTER_LEFT" styleClass="search-bar">
+        <JFXTextField promptText="🔍 Caută parteneri..." prefWidth="300" styleClass="search-field"/>
+        <MFXComboBox promptText="Tip Partener" prefWidth="150">
+            <items>
+                <FXCollections fx:factory="javafx.collections.FXCollections">
+                    <String fx:value="Toate"/>
+                    <String fx:value="CLIENT"/>
+                    <String fx:value="FORNIZOR"/>
+                </FXCollections>
+            </items>
+        </MFXComboBox>
+    </HBox>
+    
+    <!-- Partners Table -->
+    <TableView fx:id="partnersTable" VBox.vgrow="ALWAYS" styleClass="data-table">
+        <columns>
+            <TableColumn fx:id="partnerIdColumn" text="ID" prefWidth="50"/>
+            <TableColumn fx:id="partnerNameColumn" text="Denumire" prefWidth="200"/>
+            <TableColumn fx:id="partnerCodeColumn" text="Cod Fiscal" prefWidth="120"/>
+            <TableColumn fx:id="partnerTypeColumn" text="Tip" prefWidth="100"/>
+            <TableColumn fx:id="partnerContactColumn" text="Contact" prefWidth="150"/>
+            <TableColumn fx:id="partnerPhoneColumn" text="Telefon" prefWidth="120"/>
+            <TableColumn fx:id="partnerEmailColumn" text="Email" prefWidth="200"/>
+            <TableColumn fx:id="partnerCreatedAtColumn" text="Creat la" prefWidth="150"/>
+            <TableColumn fx:id="partnerActionsColumn" text="Acțiuni" prefWidth="120"/>
+        </columns>
+    </TableView>
+    
+    <!-- Status Bar -->
+    <HBox styleClass="module-status" alignment="CENTER_LEFT">
+        <Label text="👥 Total parteneri: 0" fx:id="totalPartnersLabel"/>
+        <Label text="👤 Clienți: 0" fx:id="clientsLabel"/>
+        <Label text="🏭 Furnizori: 0" fx:id="suppliersLabel"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Label text="Ultima actualizare: --:--" fx:id="lastUpdateLabel"/>
+    </HBox>
+    
+</VBox>

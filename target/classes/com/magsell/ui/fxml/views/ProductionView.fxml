@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import com.jfoenix.controls.*?>
+<?import io.github.palexdev.materialfx.controls.*?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.magsell.ui.controllers.ProductionViewController"
+      spacing="20" styleClass="module-container">
+    
+    <!-- Header -->
+    <HBox styleClass="module-header" alignment="CENTER_LEFT">
+        <Label text="🏭 Management Producție" styleClass="module-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        
+        <JFXButton text="➕ Comandă Nouă" styleClass="primary-button" onAction="#createProductionOrder"/>
+        <JFXButton text="📝 Rețetă Nouă" styleClass="secondary-button" onAction="#createRecipe"/>
+        <JFXButton text="🔄 Reîncarcă" styleClass="secondary-button" onAction="#refreshData"/>
+    </HBox>
+    
+    <!-- Tab Container -->
+    <TabPane VBox.vgrow="ALWAYS" styleClass="production-tabs">
+        
+        <!-- Tab Rețete -->
+        <Tab text="📝 Rețetar" closable="false">
+            <VBox spacing="15">
+                <!-- Search and Filter -->
+                <HBox spacing="15" alignment="CENTER_LEFT" styleClass="search-bar">
+                    <JFXTextField promptText="🔍 Caută rețete..." prefWidth="300" styleClass="search-field"/>
+                    <MFXComboBox promptText="Filtrare produs" prefWidth="200">
+                        <items>
+                            <FXCollections fx:factory="javafx.collections.FXCollections">
+                                <String fx:value="Toate produsele"/>
+                            </FXCollections>
+                        </items>
+                    </MFXComboBox>
+                </HBox>
+                
+                <!-- Recipes Table -->
+                <TableView fx:id="recipesTableView" VBox.vgrow="ALWAYS" styleClass="data-table">
+                    <columns>
+                        <TableColumn fx:id="recipeIdColumn" text="ID" prefWidth="50"/>
+                        <TableColumn fx:id="recipeNameColumn" text="Produs Finiț" prefWidth="200"/>
+                        <TableColumn fx:id="recipeIngredientsColumn" text="Ingrediente" prefWidth="300"/>
+                        <TableColumn fx:id="recipeCreatedByColumn" text="Creat de" prefWidth="120"/>
+                        <TableColumn fx:id="recipeCreatedAtColumn" text="Creat la" prefWidth="150"/>
+                        <TableColumn fx:id="recipeActionsColumn" text="Acțiuni" prefWidth="100"/>
+                    </columns>
+                </TableView>
+            </VBox>
+        </Tab>
+        
+        <!-- Tab Comenzi Producție -->
+        <Tab text="⚙️ Comenzi Producție" closable="false">
+            <VBox spacing="15">
+                <!-- Search and Filter -->
+                <HBox spacing="15" alignment="CENTER_LEFT" styleClass="search-bar">
+                    <JFXTextField promptText="🔍 Caută comenzi..." prefWidth="300" styleClass="search-field"/>
+                    <MFXComboBox promptText="Status" prefWidth="150">
+                        <items>
+                            <FXCollections fx:factory="javafx.collections.FXCollections">
+                                <String fx:value="Toate"/>
+                                <String fx:value="Pending"/>
+                                <String fx:value="In Progress"/>
+                                <String fx:value="Completed"/>
+                                <String fx:value="Cancelled"/>
+                            </FXCollections>
+                        </items>
+                    </MFXComboBox>
+                    <MFXComboBox promptText="Rețetă" prefWidth="200">
+                        <items>
+                            <FXCollections fx:factory="javafx.collections.FXCollections">
+                                <String fx:value="Toate rețetele"/>
+                            </FXCollections>
+                        </items>
+                    </MFXComboBox>
+                </HBox>
+                
+                <!-- Production Orders Table -->
+                <TableView fx:id="productionOrdersTableView" VBox.vgrow="ALWAYS" styleClass="data-table">
+                    <columns>
+                        <TableColumn fx:id="orderIdColumn" text="ID" prefWidth="50"/>
+                        <TableColumn fx:id="orderRecipeColumn" text="Rețetă" prefWidth="200"/>
+                        <TableColumn fx:id="orderQuantityColumn" text="Cantitate" prefWidth="100"/>
+                        <TableColumn fx:id="orderStatusColumn" text="Status" prefWidth="120"/>
+                        <TableColumn fx:id="orderCreatedAtColumn" text="Creat la" prefWidth="150"/>
+                        <TableColumn fx:id="orderCreatedByColumn" text="Creat de" prefWidth="120"/>
+                        <TableColumn fx:id="orderActionsColumn" text="Acțiuni" prefWidth="150"/>
+                    </columns>
+                </TableView>
+            </VBox>
+        </Tab>
+        
+        <!-- Tab Stocuri -->
+        <Tab text="📊 Stocuri Materii Prime" closable="false">
+            <VBox spacing="15">
+                <!-- Search and Filter -->
+                <HBox spacing="15" alignment="CENTER_LEFT" styleClass="search-bar">
+                    <JFXTextField promptText="🔍 Caută produse..." prefWidth="300" styleClass="search-field"/>
+                    <MFXComboBox promptText="Tip Produs" prefWidth="150">
+                        <items>
+                            <FXCollections fx:factory="javafx.collections.FXCollections">
+                                <String fx:value="Toate"/>
+                                <String fx:value="Materie Primă"/>
+                                <String fx:value="Produs Finit"/>
+                            </FXCollections>
+                        </items>
+                    </MFXComboBox>
+                    <JFXButton text="📊 Raport Stoc" styleClass="info-button" onAction="#generateStockReport"/>
+                </HBox>
+                
+                <!-- Stock Table -->
+                <TableView fx:id="stockTableView" VBox.vgrow="ALWAYS" styleClass="data-table">
+                    <columns>
+                        <TableColumn fx:id="stockIdColumn" text="ID" prefWidth="50"/>
+                        <TableColumn fx:id="stockNameColumn" text="Denumire" prefWidth="200"/>
+                        <TableColumn fx:id="stockTypeColumn" text="Tip" prefWidth="100"/>
+                        <TableColumn fx:id="stockCurrentColumn" text="Stoc Curent" prefWidth="100"/>
+                        <TableColumn fx:id="stockUnitColumn" text="UM" prefWidth="80"/>
+                        <TableColumn fx:id="stockMinColumn" text="Stoc Min" prefWidth="100"/>
+                        <TableColumn fx:id="stockStatusColumn" text="Status" prefWidth="100"/>
+                        <TableColumn fx:id="stockActionsColumn" text="Acțiuni" prefWidth="120"/>
+                    </columns>
+                </TableView>
+            </VBox>
+        </Tab>
+        
+    </TabPane>
+    
+    <!-- Status Bar -->
+    <HBox styleClass="module-status" alignment="CENTER_LEFT">
+        <Label text="📊 Total rețete: 0" fx:id="totalRecipesLabel"/>
+        <Label text="⚙️ Comenzi active: 0" fx:id="activeOrdersLabel"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Label text="Ultima actualizare: --:--" fx:id="lastUpdateLabel"/>
+    </HBox>
+    
+</VBox>

@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.magsell.ui.controllers.InvoiceManagementController">
+    <top>
+        <VBox spacing="10" style="-fx-padding: 10;">
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label text="Management Facturi și Note Recepție" style="-fx-font-size: 18; -fx-font-weight: bold;"/>
+                <Separator HBox.hgrow="ALWAYS" orientation="HORIZONTAL"/>
+                <Button fx:id="createManualReceptionNoteButton" text="➕️ Creează Notă Recepție Manuală" style="-fx-padding: 8;"/>
+                <Button fx:id="importInvoicesButton" text="📥 Import Facturi SPV" style="-fx-padding: 8;"/>
+                <Button fx:id="refreshButton" text="🔄 Reîncarcă" style="-fx-padding: 8;"/>
+            </HBox>
+            
+            <!-- Secțiune Import SPV -->
+            <VBox spacing="5" style="-fx-padding: 10; -fx-background-color: #f0f0f0; -fx-background-radius: 5;">
+                <Label text="Import Facturi din SPV" style="-fx-font-weight: bold;"/>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label text="CIF Furnizor:"/>
+                    <TextField fx:id="cifTextField" prefWidth="150" promptText="RO12345678"/>
+                    <Label text="Perioada:"/>
+                    <DatePicker fx:id="startDatePicker"/>
+                    <Label text="până la"/>
+                    <DatePicker fx:id="endDatePicker"/>
+                    <Button fx:id="searchInvoicesButton" text="🔍 Caută Facturi"/>
+                    <Button fx:id="downloadInvoicesButton" text="⬇️ Descarcă"/>
+                </HBox>
+            </VBox>
+        </VBox>
+    </top>
+
+    <center>
+        <TabPane fx:id="mainTabPane" tabClosingPolicy="UNAVAILABLE">
+            <Tab text="Facturi Importate">
+                <VBox spacing="10" style="-fx-padding: 10;">
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Label text="Facturi:"/>
+                        <Button fx:id="generateReceptionNoteButton" text="📋 Generează Notă Recepție"/>
+                        <Button fx:id="viewInvoiceButton" text="👁️ Vezi Factura"/>
+                        <Button fx:id="deleteInvoiceButton" text="🗑️ Șterge"/>
+                    </HBox>
+                    
+                    <TableView fx:id="invoicesTableView" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="invoiceIdColumn" text="ID" prefWidth="50"/>
+                            <TableColumn fx:id="invoiceNumberColumn" text="Număr Factură" prefWidth="120"/>
+                            <TableColumn fx:id="invoiceDateColumn" text="Data" prefWidth="100"/>
+                            <TableColumn fx:id="supplierColumn" text="Furnizor" prefWidth="200"/>
+                            <TableColumn fx:id="totalAmountColumn" text="Total" prefWidth="100"/>
+                            <TableColumn fx:id="vatAmountColumn" text="TVA" prefWidth="80"/>
+                            <TableColumn fx:id="statusColumn" text="Status" prefWidth="100"/>
+                        </columns>
+                    </TableView>
+                </VBox>
+            </Tab>
+            
+            <Tab text="Note Recepție">
+                <VBox spacing="10" style="-fx-padding: 10;">
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Label text="Note Recepție:"/>
+                        <Button fx:id="editReceptionNoteButton" text="✏️ Editează"/>
+                        <Button fx:id="confirmReceptionNoteButton" text="✅ Confirmă"/>
+                        <Button fx:id="cancelReceptionNoteButton" text="❌ Anulează"/>
+                        <Button fx:id="printReceptionNoteButton" text="🖨️ Printează"/>
+                    </HBox>
+                    
+                    <TableView fx:id="receptionNotesTableView" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="receptionNoteIdColumn" text="ID" prefWidth="50"/>
+                            <TableColumn fx:id="receptionNoteNumberColumn" text="Număr Notă" prefWidth="120"/>
+                            <TableColumn fx:id="receptionDateColumn" text="Data Recepție" prefWidth="100"/>
+                            <TableColumn fx:id="receptionSupplierColumn" text="Furnizor" prefWidth="200"/>
+                            <TableColumn fx:id="receptionTotalColumn" text="Total" prefWidth="100"/>
+                            <TableColumn fx:id="receptionStatusColumn" text="Status" prefWidth="100"/>
+                            <TableColumn fx:id="receptionCreatedByColumn" text="Creat de" prefWidth="100"/>
+                        </columns>
+                    </TableView>
+                </VBox>
+            </Tab>
+            
+            <Tab text="Detalii Factură">
+                <VBox spacing="10" style="-fx-padding: 10;">
+                    <Label text="Detalii Factură Selectată" style="-fx-font-weight: bold;"/>
+                    
+                    <GridPane hgap="10" vgap="5">
+                        <Label text="Număr Factură:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                        <Label fx:id="detailInvoiceNumberLabel" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                        
+                        <Label text="Data:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                        <Label fx:id="detailDateLabel" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                        
+                        <Label text="Furnizor:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                        <Label fx:id="detailSupplierLabel" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                        
+                        <Label text="CIF:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                        <Label fx:id="detailCifLabel" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+                        
+                        <Label text="Total:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+                        <Label fx:id="detailTotalLabel" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+                        
+                        <Label text="TVA:" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+                        <Label fx:id="detailVatLabel" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+                    </GridPane>
+                    
+                    <Separator/>
+                    
+                    <Label text="Produse:" style="-fx-font-weight: bold;"/>
+                    <TableView fx:id="invoiceItemsTableView" prefHeight="200">
+                        <columns>
+                            <TableColumn fx:id="itemNameColumn" text="Produs" prefWidth="200"/>
+                            <TableColumn fx:id="itemCodeColumn" text="Cod" prefWidth="100"/>
+                            <TableColumn fx:id="itemQuantityColumn" text="Cantitate" prefWidth="80"/>
+                            <TableColumn fx:id="itemUnitPriceColumn" text="Preț Unitar" prefWidth="100"/>
+                            <TableColumn fx:id="itemTotalColumn" text="Total" prefWidth="100"/>
+                            <TableColumn fx:id="itemVatColumn" text="TVA" prefWidth="80"/>
+                        </columns>
+                    </TableView>
+                </VBox>
+            </Tab>
+        </TabPane>
+    </center>
+
+    <bottom>
+        <VBox spacing="5" style="-fx-padding: 10;">
+            <HBox spacing="10" style="-fx-padding: 10;" alignment="CENTER_LEFT">
+                <Label fx:id="statusLabel" text="ℹ️ Selectați o factură pentru a vedea detaliile sau generați note de recepție." 
+                       style="-fx-text-fill: #666; -fx-font-style: italic;"/>
+            </HBox>
+        </VBox>
+    </bottom>
+</BorderPane>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import com.jfoenix.controls.*?>
+<?import io.github.palexdev.materialfx.controls.*?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.magsell.ui.controllers.CategoriesViewController"
+      spacing="20" styleClass="module-container">
+    
+    <!-- Header -->
+    <HBox styleClass="module-header" alignment="CENTER_LEFT">
+        <Label text="🏷️ Management Categorii" styleClass="module-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        
+        <JFXButton text="➕ Adaugă Categorie" styleClass="primary-button" onAction="#addCategory"/>
+        <JFXButton text="🔄 Reîncarcă" styleClass="secondary-button" onAction="#refreshCategories"/>
+    </HBox>
+    
+    <!-- Search -->
+    <HBox spacing="15" alignment="CENTER_LEFT" styleClass="search-bar">
+        <JFXTextField promptText="🔍 Caută categorii..." prefWidth="300" styleClass="search-field"/>
+    </HBox>
+    
+    <!-- Categories Table -->
+    <TableView fx:id="categoriesTable" VBox.vgrow="ALWAYS" styleClass="data-table">
+        <columns>
+            <TableColumn fx:id="categoryIdColumn" text="ID" prefWidth="50"/>
+            <TableColumn fx:id="categoryNameColumn" text="Denumire" prefWidth="200"/>
+            <TableColumn fx:id="categoryDescriptionColumn" text="Descriere" prefWidth="300"/>
+            <TableColumn fx:id="categoryCreatedAtColumn" text="Creat la" prefWidth="150"/>
+            <TableColumn fx:id="categoryActionsColumn" text="Acțiuni" prefWidth="120"/>
+        </columns>
+    </TableView>
+    
+    <!-- Status Bar -->
+    <HBox styleClass="module-status" alignment="CENTER_LEFT">
+        <Label text="📊 Total categorii: 0" fx:id="totalCategoriesLabel"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Label text="Ultima actualizare: --:--" fx:id="lastUpdateLabel"/>
+    </HBox>
+    
+</VBox>

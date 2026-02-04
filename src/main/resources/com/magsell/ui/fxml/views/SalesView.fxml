@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import com.jfoenix.controls.*?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.magsell.ui.controllers.SimpleViewController"
+      spacing="20" styleClass="module-container">
+    
+    <Label text="💸 Vânzări" styleClass="module-title" alignment="CENTER"/>
+    <Label text="Modul Vânzări în dezvoltare" styleClass="welcome-label" alignment="CENTER"/>
+    
+</VBox>

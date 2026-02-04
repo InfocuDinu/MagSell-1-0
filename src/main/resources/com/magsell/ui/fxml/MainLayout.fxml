@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import com.jfoenix.controls.*?>
+<?import com.jfoenix.controls.JFXButton?>
+<?import com.jfoenix.controls.JFXDrawer?>
+<?import com.jfoenix.controls.JFXHamburger?>
+<?import com.jfoenix.controls.JFXListView?>
+<?import io.github.palexdev.mfxcore.controls.*?>
+<?import io.github.palexdev.materialfx.controls.*?>
+<?import io.github.palexdev.materialfx.controls.MFXScrollPane?>
+<?import io.github.palexdev.materialfx.controls.MFXIconWrapper?>
+<?import io.github.palexdev.materialfx.font.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.magsell.ui.controllers.MainController"
+            stylesheets="@styles/main-styles.css">
+    
+    <!-- TOP: Header Bar -->
+    <top>
+        <HBox styleClass="header-bar" prefHeight="60">
+            <Region HBox.hgrow="ALWAYS"/>
+            
+            <!-- User Info -->
+            <HBox spacing="15" alignment="CENTER_LEFT" styleClass="user-info">
+                <Label fx:id="userLabel" text="Utilizator: Admin" styleClass="user-label"/>
+                <JFXButton text="🚪 Ieșire" styleClass="logout-button" onAction="#handleLogout"/>
+            </HBox>
+        </HBox>
+    </top>
+    
+    <!-- LEFT: Sidebar Navigation -->
+    <left>
+        <VBox styleClass="sidebar" prefWidth="250">
+            <!-- Logo/Brand -->
+            <VBox styleClass="brand-container" alignment="CENTER" prefHeight="80">
+                <Label text="🏪 MagSell" styleClass="brand-title"/>
+                <Label text="ERP Patisserie" styleClass="brand-subtitle"/>
+            </VBox>
+            
+            <!-- Navigation Menu -->
+            <MFXScrollPane fitToWidth="true" VBox.vgrow="ALWAYS">
+                <VBox spacing="5" styleClass="nav-menu">
+                    
+                    <!-- Dashboard -->
+                    <JFXButton text="📊 Dashboard" 
+                               styleClass="nav-button" 
+                               onAction="#navigateToDashboard"
+                               prefWidth="Infinity"/>
+                    
+                    <!-- Nomenclatoare -->
+                    <VBox styleClass="nav-section">
+                        <Label text="📁 NOMENCLATOARE" styleClass="nav-section-title"/>
+                        
+                        <JFXButton text="📦 Produse" 
+                                   styleClass="nav-button sub-button" 
+                                   onAction="#navigateToProducts"
+                                   prefWidth="Infinity"/>
+                        
+                        <JFXButton text="🏷️ Categorii" 
+                                   styleClass="nav-button sub-button" 
+                                   onAction="#navigateToCategories"
+                                   prefWidth="Infinity"/>
+                        
+                        <JFXButton text="👥 Parteneri" 
+                                   styleClass="nav-button sub-button" 
+                                   onAction="#navigateToPartners"
+                                   prefWidth="Infinity"/>
+                        
+                        <JFXButton text="👤 Utilizatori" 
+                                   styleClass="nav-button sub-button" 
+                                   onAction="#navigateToUsers"
+                                   prefWidth="Infinity"/>
+                    </VBox>
+                    
+                    <!-- Intrari -->
+                    <VBox styleClass="nav-section">
+                        <Label text="📥 INTRĂRI" styleClass="nav-section-title"/>
+                        
+                        <JFXButton text="📋 NIR" 
+                                   styleClass="nav-button sub-button" 
+                                   onAction="#navigateToNIR"
+                                   prefWidth="Infinity"/>
+                        
+                        <JFXButton text="🧾 Facturi Furnizori" 
+                                   styleClass="nav-button sub-button" 
+                                   onAction="#navigateToInvoices"
+                                   prefWidth="Infinity"/>
+                    </VBox>
+                    
+                    <!-- Producție -->
+                    <VBox styleClass="nav-section">
+                        <Label text="🏭 PRODUCȚIE" styleClass="nav-section-title"/>
+                        
+                        <JFXButton text="📝 Rețetar" 
+                                   styleClass="nav-button sub-button" 
+                                   onAction="#navigateToRecipes"
+                                   prefWidth="Infinity"/>
+                        
+                        <JFXButton text="⚙️ Comenzi Producție" 
+                                   styleClass="nav-button sub-button" 
+                                   onAction="#navigateToProduction"
+                                   prefWidth="Infinity"/>
+                    </VBox>
+                    
+                    <!-- Ieșiri -->
+                    <VBox styleClass="nav-section">
+                        <Label text="📤 IEȘIRI" styleClass="nav-section-title"/>
+                        
+                        <JFXButton text="💰 POS Vânzări" 
+                                   styleClass="nav-button sub-button" 
+                                   onAction="#navigateToPOS"
+                                   prefWidth="Infinity"/>
+                        
+                        <JFXButton text="🧾 Facturare" 
+                                   styleClass="nav-button sub-button" 
+                                   onAction="#navigateToSales"
+                                   prefWidth="Infinity"/>
+                        
+                        <JFXButton text="📈 Raport Vânzări" 
+                                   styleClass="nav-button sub-button" 
+                                   onAction="#navigateToSalesReport"
+                                   prefWidth="Infinity"/>
+                    </VBox>
+                    
+                    <!-- Rapoarte -->
+                    <VBox styleClass="nav-section">
+                        <Label text="📊 RAPORTE" styleClass="nav-section-title"/>
+                        
+                        <JFXButton text="📄 Stocuri" 
+                                   styleClass="nav-button sub-button" 
+                                   onAction="#navigateToInventory"
+                                   prefWidth="Infinity"/>
+                        
+                        <JFXButton text="💸 Financiar" 
+                                   styleClass="nav-button sub-button" 
+                                   onAction="#navigateToFinancial"
+                                   prefWidth="Infinity"/>
+                    </VBox>
+                    
+                </VBox>
+            </MFXScrollPane>
+            
+            <!-- Footer -->
+            <VBox styleClass="sidebar-footer" alignment="CENTER" prefHeight="50">
+                <Label text="© 2026 MagSell ERP" styleClass="footer-text"/>
+                <Label text="v1.0.0" styleClass="version-text"/>
+            </VBox>
+        </VBox>
+    </left>
+    
+    <!-- CENTER: Dynamic Content Area -->
+    <center>
+        <StackPane fx:id="contentArea" styleClass="content-area">
+            <!-- Default content will be loaded here -->
+            <Label text="Selectați un modul din meniul lateral" 
+                   styleClass="welcome-label"
+                   alignment="CENTER"/>
+        </StackPane>
+    </center>
+    
+    <!-- BOTTOM: Status Bar -->
+    <bottom>
+        <HBox styleClass="status-bar" prefHeight="25">
+            <Label fx:id="statusLabel" text="Gata" styleClass="status-label"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="dateTimeLabel" text="" styleClass="datetime-label"/>
+        </HBox>
+    </bottom>
+    
+</BorderPane>

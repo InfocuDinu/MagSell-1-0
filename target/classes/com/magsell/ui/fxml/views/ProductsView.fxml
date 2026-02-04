@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import com.jfoenix.controls.*?>
+<?import io.github.palexdev.materialfx.controls.*?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.magsell.ui.controllers.ProductsViewController"
+      spacing="20" styleClass="module-container">
+    
+    <!-- Header -->
+    <HBox styleClass="module-header" alignment="CENTER_LEFT">
+        <Label text="📦 Management Produse" styleClass="module-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        
+        <JFXButton text="➕ Adaugă Produs" styleClass="primary-button" onAction="#addProduct"/>
+        <JFXButton text="🔄 Reîncarcă" styleClass="secondary-button" onAction="#refreshProducts"/>
+    </HBox>
+    
+    <!-- Search and Filter -->
+    <HBox spacing="15" alignment="CENTER_LEFT" styleClass="search-bar">
+        <JFXTextField promptText="🔍 Caută produse..." prefWidth="300" styleClass="search-field"/>
+        
+        <MFXComboBox promptText="Tip Produs" prefWidth="150">
+            <items>
+                <FXCollections fx:factory="javafx.collections.FXCollections">
+                    <String fx:value="Toate"/>
+                    <String fx:value="Materie Primă"/>
+                    <String fx:value="Produs Finit"/>
+                    <String fx:value="Marfă"/>
+                </FXCollections>
+            </items>
+        </MFXComboBox>
+        
+        <MFXComboBox promptText="Categorie" prefWidth="150">
+            <items>
+                <FXCollections fx:factory="javafx.collections.FXCollections">
+                    <String fx:value="Toate"/>
+                </FXCollections>
+            </items>
+        </MFXComboBox>
+    </HBox>
+    
+    <!-- Products Table -->
+    <TableView fx:id="productsTable" VBox.vgrow="ALWAYS" styleClass="data-table">
+        <columns>
+            <TableColumn fx:id="idColumn" text="ID" prefWidth="50"/>
+            <TableColumn fx:id="nameColumn" text="Denumire" prefWidth="200"/>
+            <TableColumn fx:id="categoryColumn" text="Categorie" prefWidth="120"/>
+            <TableColumn fx:id="typeColumn" text="Tip" prefWidth="100"/>
+            <TableColumn fx:id="priceColumn" text="Preț" prefWidth="100"/>
+            <TableColumn fx:id="stockColumn" text="Stoc" prefWidth="80"/>
+        </columns>
+    </TableView>
+    
+    <!-- Status Bar -->
+    <HBox styleClass="module-status" alignment="CENTER_LEFT">
+        <Label text="📊 Total produse: 0" fx:id="totalLabel"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Label text="Ultima actualizare: --:--" fx:id="lastUpdateLabel"/>
+    </HBox>
+    
+</VBox>
